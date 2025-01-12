@@ -9,5 +9,8 @@ dependencies = [
     "jupyter>=1.1.1",
     "numpy>=2.2.1",
     "pandas>=2.2.3",
+    "polars>=1.19.0",
+    "pyarrow>=18.1.0",
     "selenium>=4.27.1",
+    "webdriver-manager>=4.0.2",
 ]
