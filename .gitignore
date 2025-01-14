@@ -11,3 +11,6 @@ wheels/
 
 # Documents
 *.csv
+
+# Pictures
+*.jpg
