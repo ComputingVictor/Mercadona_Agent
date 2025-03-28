@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Productos Mercadona</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Encabezado con buscador -->
+  <header>
+    <input 
+      type="text" 
+      id="search-input" 
+      placeholder="Buscar productos..." 
+      aria-label="Buscador de productos"
+    />
+  </header>
+
+  <!-- Contenedor principal con aside (categorías) y main (productos + paginación) -->
+  <div class="container">
+    <aside>
+      <h2>Categorías</h2>
+      <!-- Botón para mostrar "Todos" -->
+      <button id="show-all" class="show-all-button">Todos</button>
+      <ul id="category-list"></ul>
+    </aside>
+
+    <main>
+      <!-- Controles de paginación -->
+      <div id="pagination-controls">
+        <label for="items-per-page">Productos por página:</label>
+        <select id="items-per-page">
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+        </select>
+
+        <button id="prev-page">Anterior</button>
+        <span id="page-info"></span>
+        <button id="next-page">Siguiente</button>
+      </div>
+
+      <!-- Contenedor donde se muestran los productos -->
+      <div id="product-container"></div>
+    </main>
+  </div>
+
+  <!-- Modal para mostrar la imagen de macros -->
+  <div id="modal" class="modal">
+    <span id="modal-close" class="modal-close">&times;</span>
+    <img id="modal-img" class="modal-content">
+  </div>
+
+  <!-- Papa Parse para leer CSV directamente -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- Tu script principal -->
+  <script src="script.js"></script>
+</body>
+</html>

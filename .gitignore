@@ -10,7 +10,7 @@ wheels/
 .venv
 
 # Documents
-*.csv
+
 
 # Pictures
 *.jpg
