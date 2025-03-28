@@ -167,13 +167,14 @@
   
   /* Botón para ver macros */
   .view-macros-button {
-    margin-top: 0.5rem;
-    padding: 0.3rem 0.5rem;
+    display: block;
+    margin: 0.6rem auto 0;
+    padding: 0.4rem 0.6rem;
     background-color: #007BFF;
     border: none;
     color: #fff;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 0.9rem;
   }
   .view-macros-button:hover {
