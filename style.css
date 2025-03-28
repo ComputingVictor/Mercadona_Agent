@@ -1,240 +1,268 @@
 /* Reset básico */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    font-family: Arial, sans-serif;
-    background: #fdfdfd;
-    line-height: 1.4;
-  }
-  
-  /* Encabezado con el input de búsqueda */
-  header {
-    background-color: #f5f5f5;
-    padding: 1rem;
-    text-align: center;
-  }
-  
-  #search-input {
-    width: 300px;
-    max-width: 90%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-  }
-  
-  /* Contenedor principal (aside + main) */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #fdfdfd;
+}
+
+/* Encabezado con el input de búsqueda */
+header {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  text-align: center;
+}
+
+#search-input {
+  width: 300px;
+  max-width: 90%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Contenedor principal (aside + main) */
+.container {
+  display: flex;
+  min-height: 90vh;
+  align-items: flex-start;
+}
+
+/* Menú lateral (categorías) */
+aside {
+  width: 220px;
+  background-color: #eee;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+}
+
+aside h2 {
+  margin-bottom: 0.5rem;
+}
+
+.show-all-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #ccc;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.show-all-button:hover {
+  background-color: #bbb;
+}
+
+#category-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+#category-list li {
+  margin: 0.5rem 0;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: background 0.2s;
+  border-radius: 4px;
+}
+
+#category-list li:hover {
+  background-color: #ccc;
+}
+
+/* Sección principal */
+main {
+  flex: 1;
+  padding: 1rem;
+  overflow: auto;
+}
+
+/* Controles de paginación (tanto los de arriba como los de abajo) */
+.pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center; /* centra todos los elementos */
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pagination-controls label {
+  font-weight: bold;
+}
+
+.pagination-controls select {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.pagination-controls button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  background-color: #3fa860;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.pagination-controls button:hover {
+  background-color: #36914e;
+}
+
+.pagination-controls span {
+  font-weight: bold;
+}
+
+/* Contenedor de productos en grid */
+#product-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.category-label {
+  font-size: 0.8rem;  /* Tamaño de letra reducido */
+  color: #999;        /* Color gris tenue */
+  margin: 0.25rem 0;
+}
+
+/* Card de producto */
+.product-card {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  text-align: center;
+  transition: box-shadow 0.2s;
+  padding: 0.5rem;
+
+  /* Para alinear el botón al fondo */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  /* Ajusta la altura a lo que necesites */
+  min-height: 330px;
+  /* Si quieres forzar que sea siempre igual (con recortes de texto),
+     puedes usar height: 330px; overflow: hidden; */
+}
+
+.product-card:hover {
+  box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
+
+.product-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.product-card h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+  flex: 0 0 auto;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  flex: 0 0 auto;
+  margin: 0.25rem 0;
+}
+
+.price {
+  font-weight: bold;
+  color: #2b2b2b;
+  margin: 0.5rem 0;
+  flex: 0 0 auto;
+}
+
+/* Botón "Ver macros" */
+.view-macros-button {
+  margin-top: auto;       /* Empuja el botón al final del flex container */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.4rem 0.6rem;
+  background-color: #007BFF;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.view-macros-button:hover {
+  background-color: #0056b3;
+}
+
+/* Modal para la imagen secundaria */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+  display: block;
+  margin: auto;
+  margin-top: 5%;
+  max-width: 90%;
+  max-height: 80%;
+  border-radius: 6px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+aside {
+  width: 220px;
+  background-color: #eee;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+  max-height: calc(100vh - 3rem); /* Altura máxima visible */
+  overflow-y: auto; /* Scroll si se pasa */
+}
+
+/* Añadido margen extra para separar la paginación inferior */
+#pagination-controls-bottom {
+  margin-top: 2.5rem;
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
   .container {
-    display: flex;
-    min-height: 90vh;
-    /* Para que el aside no baje en escritorio */
-    align-items: flex-start;
+    flex-direction: column;
   }
-  
-  /* Menú lateral (categorías) */
   aside {
-    width: 220px;
-    background-color: #eee;
-    padding: 1rem;
-  
-    /* Sticky en pantallas grandes */
-    position: sticky;
-    top: 0;
-    height: calc(100vh - 0px);
-    overflow-y: auto;
-    border-right: 1px solid #ccc;
-  }
-  
-  aside h2 {
-    margin-bottom: 0.5rem;
-  }
-  
-  .show-all-button {
-    display: block;
     width: 100%;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background-color: #ccc;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  .show-all-button:hover {
-    background-color: #bbb;
-  }
-  
-  #category-list {
-    list-style: none;
-    padding-left: 0;
-  }
-  
-  #category-list li {
-    margin: 0.5rem 0;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    transition: background 0.2s;
-    border-radius: 4px;
-  }
-  
-  #category-list li:hover {
-    background-color: #ccc;
-  }
-  
-  /* Sección principal (productos + paginación) */
-  main {
-    flex: 1;
-    padding: 1rem;
-    overflow: auto;
-  }
-  
-  /* Controles de paginación */
-  #pagination-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
     margin-bottom: 1rem;
   }
-  
-  #items-per-page {
-    padding: 0.3rem;
-  }
-  
-  #page-info {
-    font-weight: bold;
-  }
-  
-  #prev-page,
-  #next-page {
-    padding: 0.3rem 0.6rem;
-    border: 1px solid #ccc;
-    background-color: #eee;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  #prev-page:hover,
-  #next-page:hover {
-    background-color: #ddd;
-  }
-  
-  /* Contenedor de productos en grid */
   #product-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  
-  /* Card de producto */
-  .product-card {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 0.5rem;
-    background-color: #fff;
-    text-align: center;
-    transition: box-shadow 0.2s;
-  }
-  
-  .product-card:hover {
-    box-shadow: 0 0 6px rgba(0,0,0,0.2);
-  }
-  
-  .product-card img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-  }
-  
-  .product-card h3 {
-    font-size: 1rem;
-    margin: 0.5rem 0;
-  }
-  
-  .subtitle {
-    font-size: 0.9rem;
-    color: #666;
-  }
-  
-  .price {
-    font-weight: bold;
-    color: #2b2b2b;
-    margin-top: 0.5rem;
-  }
-  
-  /* Botón para ver macros */
-  .view-macros-button {
-    margin-top: 0.5rem;
-    padding: 0.3rem 0.5rem;
-    background-color: #007BFF;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 3px;
-    font-size: 0.9rem;
-  }
-  .view-macros-button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Estilos para el modal */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.8);
-  }
-  
-  .modal-content {
-    display: block;
-    margin: auto;
-    margin-top: 5%;
-    max-width: 90%;
-    max-height: 80%;
-  }
-  
-  .modal-close {
-    position: absolute;
-    top: 20px;
-    right: 35px;
-    color: #f1f1f1;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  /* ==========================
-     MEDIA QUERIES PARA MÓVILES
-     ========================== */
-  @media (max-width: 768px) {
-    /* Cambiamos a diseño de 1 columna */
-    .container {
-      flex-direction: column;
-    }
-  
-    aside {
-      position: static; /* Deja de ser sticky en móvil */
-      width: 100%;
-      height: auto;
-      overflow-y: visible;
-      border-right: none;
-      border-bottom: 1px solid #ccc;
-      margin-bottom: 1rem;
-    }
-  
-    #product-container {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-  
-    #search-input {
-      max-width: 100%;
-    }
-  }
+}

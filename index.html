@@ -26,21 +26,31 @@
     </aside>
 
     <main>
-      <!-- Controles de paginación -->
-      <div id="pagination-controls">
+      <!-- Controles de paginación (superior) -->
+      <div id="pagination-controls-top" class="pagination-controls">
         <label for="items-per-page">Productos por página:</label>
         <select id="items-per-page">
           <option value="20" selected>20</option>
-          <option value="50">50</option>
+          <option value="40">40</option>
+          <option value="60">60</option>
+          <option value="80">80</option>
+          <option value="100">100</option>
         </select>
-
-        <button id="prev-page">Anterior</button>
-        <span id="page-info"></span>
-        <button id="next-page">Siguiente</button>
+        <button id="prev-page-top">Anterior</button>
+        <span id="page-info-top"></span>
+        <button id="next-page-top">Siguiente</button>
       </div>
 
       <!-- Contenedor donde se muestran los productos -->
       <div id="product-container"></div>
+
+      <!-- Controles de paginación (inferior) -->
+      <div id="pagination-controls-bottom" class="pagination-controls">
+        <button id="prev-page-bottom">Anterior</button>
+        <span id="page-info-bottom"></span>
+        <button id="next-page-bottom">Siguiente</button>
+      </div>
+
     </main>
   </div>
 
