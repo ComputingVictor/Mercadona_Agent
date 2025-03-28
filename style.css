@@ -251,6 +251,28 @@ aside {
   margin-top: 2.5rem;
 }
 
+header {
+  background-color: #f5f5f5;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  flex-shrink: 0;
+}
+
+.logo-super {
+  height: 90px;
+  width: auto;
+}
+
+.header-right {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
 /* Responsive para móvil */
 @media (max-width: 768px) {
   .container {
