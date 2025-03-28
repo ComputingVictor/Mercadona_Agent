@@ -237,6 +237,20 @@ main {
   cursor: pointer;
 }
 
+aside {
+  width: 220px;
+  background-color: #eee;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+  max-height: calc(100vh - 3rem); /* Altura máxima visible */
+  overflow-y: auto; /* Scroll si se pasa */
+}
+
+/* Añadido margen extra para separar la paginación inferior */
+#pagination-controls-bottom {
+  margin-top: 2.5rem;
+}
+
 /* Responsive para móvil */
 @media (max-width: 768px) {
   .container {

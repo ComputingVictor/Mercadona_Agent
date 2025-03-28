@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let categories = [];
 
   let currentPage = 1;
-  let itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
+  let itemsPerPage = 100;
+  itemsPerPageSelect.value = '100';
 
   function removeDiacritics(str) {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -46,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
       );
 
       renderCategories();
+      currentProducts.sort((a, b) =>
+        removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
+      );
       renderProducts(currentProducts);
     },
     error: function(err) {
@@ -62,12 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
       li.addEventListener('click', () => {
         currentPage = 1;
         currentProducts = productsData.filter(item => item.Category === category);
-
-        // Ordena por nombre alfabéticamente
         currentProducts.sort((a, b) =>
           removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
         );
-
         renderProducts(currentProducts);
       });
       categoryList.appendChild(li);
@@ -162,6 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (tokens.length === 0) {
       currentProducts = [...productsData];
+      currentProducts.sort((a, b) =>
+        removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
+      );
     } else {
       currentProducts = productsData.filter(item => {
         const name = removeDiacritics((item.name || '').toLowerCase());
