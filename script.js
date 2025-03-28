@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Referencias a elementos del DOM
     const searchInput = document.getElementById('search-input');
     const categoryList = document.getElementById('category-list');
     const showAllBtn = document.getElementById('show-all');
@@ -11,37 +12,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextPageBtn = document.getElementById('next-page');
     const pageInfo = document.getElementById('page-info');
   
-    // Datos globales
-    let productsData = [];     // Todos los productos
-    let currentProducts = [];  // Productos filtrados (por búsqueda o categoría)
+    // Variables globales
+    let productsData = [];     // Todos los productos del CSV
+    let currentProducts = [];  // Subconjunto de productos (filtrados)
     let categories = [];
   
     // Paginación
     let currentPage = 1;
-    let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto 20
+    let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto, 20
   
     // Cargamos el CSV usando Papa Parse
     Papa.parse('data/products_macro.csv', {
       download: true,
       header: true,
       complete: function(results) {
+        console.log('Resultados PapaParse:', results); // Para depurar en consola
+  
         // Guardamos los datos parseados
-        productsData = results.data;
+        productsData = results.data.filter(item => item.Category); 
+        // (filter para ignorar posibles filas vacías)
+  
         // Inicialmente, currentProducts = todos
         currentProducts = productsData;
   
         // Extraemos categorías únicas
         categories = [...new Set(productsData.map(item => item.Category))];
   
+        console.log('Categorías detectadas:', categories);
+  
         // Pintamos la lista de categorías
         renderCategories();
   
         // Renderizamos la primera página
         renderProducts(currentProducts);
+      },
+      error: function(err) {
+        console.error('Error cargando CSV:', err);
       }
     });
   
-    // Renderiza las categorías en el aside
+    /**
+     * Renderiza la lista de categorías en el aside
+     */
     function renderCategories() {
       categoryList.innerHTML = '';
   
@@ -51,11 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
         // Al hacer clic en una categoría, filtramos
         li.addEventListener('click', () => {
-          // Reiniciamos la página
+          console.log('Filtrando por categoría:', category);
           currentPage = 1;
-          // Filtramos
           currentProducts = productsData.filter(item => item.Category === category);
-          // Renderizamos
           renderProducts(currentProducts);
         });
   
@@ -63,8 +73,21 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   
-    // Renderiza los productos con paginación
+    /**
+     * Renderiza los productos de 'data' teniendo en cuenta la paginación
+     */
     function renderProducts(data) {
+      console.log('Renderizando productos. Total:', data.length);
+  
+      // Si no hay datos, limpiamos y salimos
+      if (!data || data.length === 0) {
+        productContainer.innerHTML = '<p>No hay productos para mostrar.</p>';
+        pageInfo.textContent = '';
+        prevPageBtn.disabled = true;
+        nextPageBtn.disabled = true;
+        return;
+      }
+  
       // Calculamos total de páginas
       const totalPages = Math.ceil(data.length / itemsPerPage);
   
@@ -72,33 +95,34 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentPage < 1) currentPage = 1;
       if (currentPage > totalPages) currentPage = totalPages;
   
-      // Cortamos el array según la página
+      // Determinamos el subset de productos para la página actual
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedData = data.slice(startIndex, endIndex);
   
-      // Limpiamos contenedor
+      // Limpiamos el contenedor antes de pintar
       productContainer.innerHTML = '';
   
       // Renderizamos cada producto
       paginatedData.forEach(item => {
+        // Creamos el "card"
         const productCard = document.createElement('div');
         productCard.classList.add('product-card');
   
         const img = document.createElement('img');
         img.src = item.main_image_url;
-        img.alt = item.name;
+        img.alt = item.name || 'Producto';
   
         const title = document.createElement('h3');
-        title.textContent = item.name;
+        title.textContent = item.name || 'Sin nombre';
   
         const subtitle = document.createElement('p');
         subtitle.classList.add('subtitle');
-        subtitle.textContent = item.subtitle;
+        subtitle.textContent = item.subtitle || '';
   
         const price = document.createElement('p');
         price.classList.add('price');
-        price.textContent = item.price;
+        price.textContent = item.price || '';
   
         // Añadimos al card
         productCard.appendChild(img);
@@ -106,27 +130,29 @@ document.addEventListener('DOMContentLoaded', function() {
         productCard.appendChild(subtitle);
         productCard.appendChild(price);
   
-        // Metemos el card en el contenedor
+        // Insertamos el card en el contenedor
         productContainer.appendChild(productCard);
       });
   
       // Actualizamos la info de paginación
-      pageInfo.textContent = `Página ${currentPage} de ${totalPages || 1}`;
+      pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
   
-      // Deshabilitamos botones si no hay más páginas
+      // Deshabilitamos botones si estamos en la primera o última página
       prevPageBtn.disabled = (currentPage === 1);
-      nextPageBtn.disabled = (currentPage === totalPages || totalPages === 0);
+      nextPageBtn.disabled = (currentPage === totalPages);
     }
   
-    // Función para filtrar productos por texto
+    /**
+     * Función para filtrar productos por texto en el buscador
+     */
     function filterBySearch(value) {
-      // Si está vacío, mostramos todo
+      // Si está vacío, mostramos todos
       if (!value) {
         currentProducts = productsData;
       } else {
         const lowerValue = value.toLowerCase();
         currentProducts = productsData.filter(item =>
-          item.name.toLowerCase().includes(lowerValue)
+          (item.name || '').toLowerCase().includes(lowerValue)
         );
       }
       // Volvemos a la página 1 y renderizamos
@@ -134,19 +160,24 @@ document.addEventListener('DOMContentLoaded', function() {
       renderProducts(currentProducts);
     }
   
-    // Evento para el input de búsqueda (dinámico)
+    /**
+     * EVENTOS
+     */
+  
+    // Evento para el input de búsqueda (dinámico al escribir)
     searchInput.addEventListener('input', function() {
       filterBySearch(searchInput.value);
     });
   
     // Botón "Todos" para mostrar todos los productos
     showAllBtn.addEventListener('click', () => {
+      console.log('Mostrando todos los productos');
       currentPage = 1;
       currentProducts = productsData;
       renderProducts(currentProducts);
     });
   
-    // Cambio de "items per page"
+    // Cambio de "items per page" (select)
     itemsPerPageSelect.addEventListener('change', () => {
       itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
       currentPage = 1;
