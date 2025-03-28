@@ -1,19 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Referencias a elementos del DOM - Paginación superior
+  // Referencias a elementos del DOM
   const searchInput = document.getElementById('search-input');
   const categoryList = document.getElementById('category-list');
   const showAllBtn = document.getElementById('show-all');
   const productContainer = document.getElementById('product-container');
 
+  // Controles de paginación
   const itemsPerPageSelect = document.getElementById('items-per-page');
   const prevPageBtn = document.getElementById('prev-page');
   const nextPageBtn = document.getElementById('next-page');
   const pageInfo = document.getElementById('page-info');
-
-  // Referencias a elementos de paginación inferior
-  const prevPageBtnBottom = document.getElementById('prev-page-bottom');
-  const nextPageBtnBottom = document.getElementById('next-page-bottom');
-  const pageInfoBottom = document.getElementById('page-info-bottom');
 
   // Elementos del modal
   const modal = document.getElementById('modal');
@@ -40,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     header: true,
     complete: function(results) {
       console.log('Resultados PapaParse:', results);
+
       if (!results || !results.data || results.data.length === 0) {
         console.error("No se han cargado datos desde el CSV. Revisa la ruta y el formato del archivo.");
         productContainer.innerHTML = '<p>Error al cargar los productos.</p>';
@@ -49,10 +46,12 @@ document.addEventListener('DOMContentLoaded', function() {
       // Filtramos filas vacías (por si acaso)
       productsData = results.data.filter(item => item.Category && item.main_image_url);
       console.log(`Se han cargado ${productsData.length} productos válidos.`);
-      
+
+      // Inicialmente, currentProducts = todos
       currentProducts = productsData;
+
+      // Extraemos categorías únicas y las ordenamos alfabéticamente ignorando acentos
       categories = [...new Set(productsData.map(item => item.Category))];
-      // Ordenamos las categorías ignorando acentos y mayúsculas/minúsculas
       categories.sort((a, b) => removeDiacritics(a).localeCompare(removeDiacritics(b), 'es', { sensitivity: 'base' }));
       console.log('Categorías detectadas (ordenadas):', categories);
 
@@ -88,14 +87,12 @@ document.addEventListener('DOMContentLoaded', function() {
    */
   function renderProducts(data) {
     console.log('Renderizando productos. Total filtrado:', data.length);
+
     if (!data || data.length === 0) {
       productContainer.innerHTML = '<p>No hay productos para mostrar.</p>';
       pageInfo.textContent = '';
-      pageInfoBottom.textContent = '';
       prevPageBtn.disabled = true;
       nextPageBtn.disabled = true;
-      prevPageBtnBottom.disabled = true;
-      nextPageBtnBottom.disabled = true;
       return;
     }
 
@@ -108,6 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const paginatedData = data.slice(startIndex, endIndex);
 
     productContainer.innerHTML = '';
+
     paginatedData.forEach(item => {
       const productCard = document.createElement('div');
       productCard.classList.add('product-card');
@@ -129,10 +127,11 @@ document.addEventListener('DOMContentLoaded', function() {
       subtitle.textContent = item.subtitle || '';
       productCard.appendChild(subtitle);
 
-      // Precio (forzamos el "€")
+      // Precio (forzamos "€")
       const price = document.createElement('p');
       price.classList.add('price');
       let priceText = item.price || '';
+      // Quitamos el "€" si existe y lo añadimos al final
       priceText = priceText.replace('€', '').trim();
       if (priceText) {
         priceText += ' €';
@@ -140,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
       price.textContent = priceText;
       productCard.appendChild(price);
 
-      // Botón "Ver macros" centrado (se recomienda en CSS: display: block; margin: 0.6rem auto 0;)
+      // Botón "Ver macros" si hay imagen secundaria
       if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
         const viewMacrosBtn = document.createElement('button');
         viewMacrosBtn.textContent = 'Ver macros';
@@ -155,18 +154,13 @@ document.addEventListener('DOMContentLoaded', function() {
       productContainer.appendChild(productCard);
     });
 
-    // Actualizamos ambos controles de paginación (superior e inferior)
-    const paginationText = `Página ${currentPage} de ${totalPages}`;
-    pageInfo.textContent = paginationText;
-    pageInfoBottom.textContent = paginationText;
+    pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
     prevPageBtn.disabled = (currentPage === 1);
     nextPageBtn.disabled = (currentPage === totalPages);
-    prevPageBtnBottom.disabled = (currentPage === 1);
-    nextPageBtnBottom.disabled = (currentPage === totalPages);
   }
 
   /**
-   * Filtra productos según el valor del buscador, ignorando acentos.
+   * Filtra productos según el valor del buscador (ignorando acentos).
    */
   function filterBySearch(value) {
     if (!value) {
@@ -183,14 +177,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   /**
-   * Abre el modal mostrando la imagen pasada como parámetro.
+   * Abre el modal con la imagen secundaria (macros).
    */
   function openModal(imageUrl) {
     modal.style.display = 'block';
     modalImg.src = imageUrl;
   }
 
-  // Eventos para cerrar el modal
+  // Cerrar modal al hacer click en la "X" o fuera de la imagen
   modalClose.addEventListener('click', () => {
     modal.style.display = 'none';
   });
@@ -200,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Eventos para búsqueda, categorías y paginación
+  // Eventos de búsqueda y categorías
   searchInput.addEventListener('input', function() {
     filterBySearch(searchInput.value);
   });
@@ -212,28 +206,19 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProducts(currentProducts);
   });
 
+  // Control de paginación
   itemsPerPageSelect.addEventListener('change', () => {
     itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
     currentPage = 1;
     renderProducts(currentProducts);
   });
 
-  // Eventos de paginación (superior)
   prevPageBtn.addEventListener('click', () => {
     currentPage--;
     renderProducts(currentProducts);
   });
-  nextPageBtn.addEventListener('click', () => {
-    currentPage++;
-    renderProducts(currentProducts);
-  });
 
-  // Eventos de paginación (inferior)
-  prevPageBtnBottom.addEventListener('click', () => {
-    currentPage--;
-    renderProducts(currentProducts);
-  });
-  nextPageBtnBottom.addEventListener('click', () => {
+  nextPageBtn.addEventListener('click', () => {
     currentPage++;
     renderProducts(currentProducts);
   });

@@ -31,7 +31,10 @@
         <label for="items-per-page">Productos por página:</label>
         <select id="items-per-page">
           <option value="20" selected>20</option>
-          <option value="50">50</option>
+          <option value="40">40</option>
+          <option value="60">60</option>
+          <option value="80">80</option>
+          <option value="100">100</option>
         </select>
 
         <button id="prev-page">Anterior</button>
@@ -44,7 +47,7 @@
     </main>
   </div>
 
-  <!-- Modal para mostrar la imagen de macros -->
+  <!-- Modal para mostrar la imagen secundaria (macros) -->
   <div id="modal" class="modal">
     <span id="modal-close" class="modal-close">&times;</span>
     <img id="modal-img" class="modal-content">
@@ -52,7 +55,7 @@
 
   <!-- Papa Parse para leer CSV directamente -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <!-- Tu script principal -->
+  <!-- Script principal -->
   <script src="script.js"></script>
 </body>
 </html>
