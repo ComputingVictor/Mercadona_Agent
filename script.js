@@ -48,9 +48,9 @@ document.addEventListener('DOMContentLoaded', function() {
       productsData = results.data.filter(item => item.Category && item.main_image_url);
       currentProducts = productsData;
 
-      // Categorías ordenadas
+      // Categorías ordenadas alfabéticamente ignorando acentos
       categories = [...new Set(productsData.map(item => item.Category))];
-      categories.sort((a,b) => removeDiacritics(a).localeCompare(removeDiacritics(b), 'es', {sensitivity:'base'}));
+      categories.sort((a, b) => removeDiacritics(a).localeCompare(removeDiacritics(b), 'es', {sensitivity: 'base'}));
 
       renderCategories();
       renderProducts(currentProducts);
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderProducts(data) {
     if (!data || data.length === 0) {
       productContainer.innerHTML = '<p>No hay productos para mostrar.</p>';
-      updatePaginationInfo(0,0);
+      updatePaginationInfo(0, 0);
       disableAllPagination(true);
       return;
     }
@@ -118,18 +118,16 @@ document.addEventListener('DOMContentLoaded', function() {
       subtitle.textContent = item.subtitle || '';
       card.appendChild(subtitle);
 
-
-      // NUEVO: categoría en pequeñito
+      // Categoría en pequeño
       const categoryText = document.createElement('p');
-      categoryText.classList.add('category-label'); // Le daremos estilo en el CSS
-      categoryText.textContent = item.Category;     // Lo que contenga la propiedad “Category”
-      productCard.appendChild(categoryText);
+      categoryText.classList.add('category-label');
+      categoryText.textContent = item.Category; // <-- Corregido: se añade a `card`
+      card.appendChild(categoryText);
 
-      // Precio
+      // Precio (forzamos el símbolo € sin duplicarlo)
       const price = document.createElement('p');
       price.classList.add('price');
       let priceText = item.price || '';
-      // Forzar el símbolo € sin duplicarlo
       priceText = priceText.replace('€', '').trim();
       if (priceText) {
         priceText += ' €';
