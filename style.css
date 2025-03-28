@@ -253,25 +253,32 @@ aside {
 
 header {
   background-color: #f5f5f5;
-  padding: 1rem 1.5rem;
-  display: flex;
+  padding: 1rem 2rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-}
-
-.header-left {
-  flex-shrink: 0;
+  gap: 1rem;
 }
 
 .logo-super {
-  height: 60px;
+  height: 40px;
   width: auto;
 }
 
-.header-right {
-  flex-grow: 1;
+.header-center {
   display: flex;
   justify-content: center;
+}
+
+.header-center input {
+  width: 100%;
+  max-width: 350px;
+}
+
+.username {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #555;
 }
 /* Responsive para móvil */
 @media (max-width: 768px) {
