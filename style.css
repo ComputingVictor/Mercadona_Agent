@@ -1,269 +1,248 @@
-/* ==========================
-   RESET BÁSICO
-   ========================== */
-   * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    font-family: Arial, sans-serif;
-    background: #fdfdfd;
-  }
-  
-  /* ==========================
-     HEADER (BUSCADOR)
-     ========================== */
-  header {
-    background-color: #f5f5f5;
-    padding: 1rem;
-    text-align: center;
-  }
-  
-  #search-input {
-    width: 300px;
-    max-width: 90%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  /* ==========================
-     LAYOUT PRINCIPAL
-     ========================== */
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #fdfdfd;
+}
+
+/* Encabezado con el input de búsqueda */
+header {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  text-align: center;
+}
+
+#search-input {
+  width: 300px;
+  max-width: 90%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Contenedor principal (aside + main) */
+.container {
+  display: flex;
+  min-height: 90vh;
+  align-items: flex-start;
+}
+
+/* Menú lateral (categorías) */
+aside {
+  width: 220px;
+  background-color: #eee;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+}
+
+aside h2 {
+  margin-bottom: 0.5rem;
+}
+
+.show-all-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #ccc;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.show-all-button:hover {
+  background-color: #bbb;
+}
+
+#category-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+#category-list li {
+  margin: 0.5rem 0;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: background 0.2s;
+  border-radius: 4px;
+}
+
+#category-list li:hover {
+  background-color: #ccc;
+}
+
+/* Sección principal */
+main {
+  flex: 1;
+  padding: 1rem;
+  overflow: auto;
+}
+
+/* Controles de paginación (tanto los de arriba como los de abajo) */
+.pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center; /* centra todos los elementos */
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pagination-controls label {
+  font-weight: bold;
+}
+
+.pagination-controls select {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.pagination-controls button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  background-color: #3fa860;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.pagination-controls button:hover {
+  background-color: #36914e;
+}
+
+.pagination-controls span {
+  font-weight: bold;
+}
+
+/* Contenedor de productos en grid */
+#product-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+/* Card de producto */
+.product-card {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  text-align: center;
+  transition: box-shadow 0.2s;
+  padding: 0.5rem;
+
+  /* Para alinear el botón al fondo */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  /* Ajusta la altura a lo que necesites */
+  min-height: 330px;
+  /* Si quieres forzar que sea siempre igual (con recortes de texto),
+     puedes usar height: 330px; overflow: hidden; */
+}
+
+.product-card:hover {
+  box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
+
+.product-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.product-card h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+  flex: 0 0 auto;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  flex: 0 0 auto;
+  margin: 0.25rem 0;
+}
+
+.price {
+  font-weight: bold;
+  color: #2b2b2b;
+  margin: 0.5rem 0;
+  flex: 0 0 auto;
+}
+
+/* Botón "Ver macros" */
+.view-macros-button {
+  margin-top: auto;       /* Empuja el botón al final del flex container */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.4rem 0.6rem;
+  background-color: #007BFF;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.view-macros-button:hover {
+  background-color: #0056b3;
+}
+
+/* Modal para la imagen secundaria */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+  display: block;
+  margin: auto;
+  margin-top: 5%;
+  max-width: 90%;
+  max-height: 80%;
+  border-radius: 6px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
   .container {
-    display: flex;
-    min-height: 90vh; 
-    align-items: flex-start;
-  }
-  
-  /* ==========================
-     ASIDE (CATEGORÍAS)
-     ========================== */
-  aside {
-    width: 220px;
-    background-color: #eee;
-    padding: 1rem;
-    border-right: 1px solid #ccc;
-  }
-  
-  aside h2 {
-    margin-bottom: 0.5rem;
-  }
-  
-  .show-all-button {
-    display: block;
-    width: 100%;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background-color: #ccc;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  .show-all-button:hover {
-    background-color: #bbb;
-  }
-  
-  #category-list {
-    list-style: none;
-    padding-left: 0;
-  }
-  
-  #category-list li {
-    margin: 0.5rem 0;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    transition: background 0.2s;
-    border-radius: 4px;
-  }
-  
-  #category-list li:hover {
-    background-color: #ccc;
-  }
-  
-  /* ==========================
-     MAIN
-     ========================== */
-  main {
-    flex: 1;
-    padding: 1rem;
-    overflow: auto;
-  }
-  
-  /* ==========================
-     PAGINACIÓN
-     ========================== */
-  #pagination-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center; /* centra los elementos */
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  #items-per-page {
-    padding: 0.3rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  #page-info {
-    font-weight: bold;
-  }
-  
-  #prev-page,
-  #next-page {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    background-color: #3fa860;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 4px;
-    font-weight: bold;
-  }
-  
-  #prev-page:hover,
-  #next-page:hover {
-    background-color: #36914e;
-  }
-  
-  /* ==========================
-     GRID DE PRODUCTOS
-     ========================== */
-  #product-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-  }
-  
-  /* ==========================
-     TARJETAS (PRODUCTO)
-     ========================== */
-  .product-card {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-    text-align: center;
-    transition: box-shadow 0.2s;
-    padding: 0.5rem;
-  
-    /* Para alinear el botón al fondo */
-    display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    min-height: 340px; /* Ajusta según tus contenidos */
   }
-  
-  .product-card:hover {
-    box-shadow: 0 0 6px rgba(0,0,0,0.2);
-  }
-  
-  .product-card img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-  }
-  
-  .product-card h3 {
-    font-size: 1rem;
-    margin: 0.5rem 0;
-  }
-  
-  .subtitle {
-    font-size: 0.9rem;
-    color: #666;
-  }
-  
-  /* ==========================
-     NUEVO: ETIQUETA CATEGORÍA 
-     ========================== */
-  .category-label {
-    font-size: 0.8rem; /* letra más pequeña */
-    color: #999;
-    margin: 0.25rem 0;
-  }
-  
-  .price {
-    font-weight: bold;
-    color: #2b2b2b;
-    margin: 0.5rem 0;
-  }
-  
-  /* ==========================
-     BOTÓN VER MACROS
-     ========================== */
-  .view-macros-button {
-    margin-top: auto;       /* Empuja el botón al final del flex container */
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0.4rem 0.6rem;
-    background-color: #007BFF;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
-  
-  .view-macros-button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* ==========================
-     MODAL (IMAGEN SECUNDARIA)
-     ========================== */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
+  aside {
     width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.8);
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 1rem;
   }
-  
-  .modal-content {
-    display: block;
-    margin: auto;
-    margin-top: 5%;
-    max-width: 90%;
-    max-height: 80%;
-    border-radius: 6px;
+  #product-container {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  
-  .modal-close {
-    position: absolute;
-    top: 20px;
-    right: 35px;
-    color: #f1f1f1;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  /* ==========================
-     RESPONSIVE (MÓVIL)
-     ========================== */
-  @media (max-width: 768px) {
-    .container {
-      flex-direction: column;
-    }
-    aside {
-      width: 100%;
-      border-right: none;
-      border-bottom: 1px solid #ccc;
-      margin-bottom: 1rem;
-    }
-    #product-container {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-  }
+}

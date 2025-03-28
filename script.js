@@ -1,79 +1,73 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Referencias a elementos del DOM
+  // Referencias a elementos del DOM (paginación arriba)
   const searchInput = document.getElementById('search-input');
   const categoryList = document.getElementById('category-list');
   const showAllBtn = document.getElementById('show-all');
   const productContainer = document.getElementById('product-container');
 
-  // Controles de paginación
   const itemsPerPageSelect = document.getElementById('items-per-page');
-  const prevPageBtn = document.getElementById('prev-page');
-  const nextPageBtn = document.getElementById('next-page');
-  const pageInfo = document.getElementById('page-info');
+  const prevPageBtnTop = document.getElementById('prev-page-top');
+  const nextPageBtnTop = document.getElementById('next-page-top');
+  const pageInfoTop = document.getElementById('page-info-top');
+
+  // Paginación abajo
+  const prevPageBtnBottom = document.getElementById('prev-page-bottom');
+  const nextPageBtnBottom = document.getElementById('next-page-bottom');
+  const pageInfoBottom = document.getElementById('page-info-bottom');
 
   // Elementos del modal
   const modal = document.getElementById('modal');
   const modalImg = document.getElementById('modal-img');
   const modalClose = document.getElementById('modal-close');
 
-  // Variables globales
-  let productsData = [];     // Todos los productos del CSV
-  let currentProducts = [];  // Subconjunto de productos (filtrados)
+  // Datos globales
+  let productsData = [];
+  let currentProducts = [];
   let categories = [];
 
   // Paginación
   let currentPage = 1;
-  let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto, 20
+  let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // 20 por defecto
 
-  // Función para eliminar acentos/diacríticos de una cadena
+  // Eliminar acentos
   function removeDiacritics(str) {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
-  // Cargamos el CSV usando Papa Parse
+  // Cargamos el CSV
   Papa.parse('data/processed/products_macro.csv', {
     download: true,
     header: true,
     complete: function(results) {
-      console.log('Resultados PapaParse:', results);
-
       if (!results || !results.data || results.data.length === 0) {
-        console.error("No se han cargado datos desde el CSV. Revisa la ruta y el formato del archivo.");
+        console.error("No se han cargado datos desde el CSV. Revisa la ruta.");
         productContainer.innerHTML = '<p>Error al cargar los productos.</p>';
         return;
       }
 
-      // Filtramos filas vacías (por si acaso)
       productsData = results.data.filter(item => item.Category && item.main_image_url);
-      console.log(`Se han cargado ${productsData.length} productos válidos.`);
-      
-      // Inicialmente, currentProducts = todos
       currentProducts = productsData;
 
-      // Extraemos categorías únicas y las ordenamos alfabéticamente ignorando acentos
+      // Categorías ordenadas
       categories = [...new Set(productsData.map(item => item.Category))];
-      categories.sort((a, b) => removeDiacritics(a).localeCompare(removeDiacritics(b), 'es', { sensitivity: 'base' }));
-      console.log('Categorías detectadas (ordenadas):', categories);
+      categories.sort((a,b) => removeDiacritics(a).localeCompare(removeDiacritics(b), 'es', {sensitivity:'base'}));
 
       renderCategories();
       renderProducts(currentProducts);
     },
     error: function(err) {
-      console.error('Error cargando CSV:', err);
+      console.error('Error CSV:', err);
       productContainer.innerHTML = '<p>Error al cargar el CSV.</p>';
     }
   });
 
-  /**
-   * Renderiza la lista de categorías en el aside
-   */
+  // Render de categorías
   function renderCategories() {
     categoryList.innerHTML = '';
     categories.forEach(category => {
       const li = document.createElement('li');
       li.textContent = category;
       li.addEventListener('click', () => {
-        console.log('Filtrando por categoría:', category);
         currentPage = 1;
         currentProducts = productsData.filter(item => item.Category === category);
         renderProducts(currentProducts);
@@ -82,16 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  /**
-   * Renderiza los productos con paginación
-   */
+  // Render de productos con paginación
   function renderProducts(data) {
-    console.log('Renderizando productos. Total filtrado:', data.length);
     if (!data || data.length === 0) {
       productContainer.innerHTML = '<p>No hay productos para mostrar.</p>';
-      pageInfo.textContent = '';
-      prevPageBtn.disabled = true;
-      nextPageBtn.disabled = true;
+      updatePaginationInfo(0,0);
+      disableAllPagination(true);
       return;
     }
 
@@ -103,131 +93,147 @@ document.addEventListener('DOMContentLoaded', function() {
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = data.slice(startIndex, endIndex);
 
+    // Limpia el contenedor
     productContainer.innerHTML = '';
-    paginatedData.forEach(item => {
-      const productCard = document.createElement('div');
-      productCard.classList.add('product-card');
 
-      // Imagen principal
+    // Crea cada tarjeta
+    paginatedData.forEach(item => {
+      const card = document.createElement('div');
+      card.classList.add('product-card');
+
+      // Imagen
       const img = document.createElement('img');
       img.src = item.main_image_url;
       img.alt = item.name || 'Producto';
-      productCard.appendChild(img);
+      card.appendChild(img);
 
       // Nombre
       const title = document.createElement('h3');
       title.textContent = item.name || 'Sin nombre';
-      productCard.appendChild(title);
+      card.appendChild(title);
 
       // Subtítulo
       const subtitle = document.createElement('p');
       subtitle.classList.add('subtitle');
       subtitle.textContent = item.subtitle || '';
-      productCard.appendChild(subtitle);
+      card.appendChild(subtitle);
 
-      // NUEVO: categoría en texto pequeño
-      const categoryText = document.createElement('p');
-      categoryText.classList.add('category-label');
-      categoryText.textContent = item.Category || '';
-      productCard.appendChild(categoryText);
-
-      // Precio (forzamos el símbolo "€")
+      // Precio
       const price = document.createElement('p');
       price.classList.add('price');
       let priceText = item.price || '';
-      // Remover cualquier "€" previo y añadir uno al final
+      // Forzar el símbolo € sin duplicarlo
       priceText = priceText.replace('€', '').trim();
       if (priceText) {
         priceText += ' €';
       }
       price.textContent = priceText;
-      productCard.appendChild(price);
+      card.appendChild(price);
 
-      // Botón "Ver macros" si existe imagen secundaria
+      // Botón "Ver macros"
       if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
-        const viewMacrosBtn = document.createElement('button');
-        viewMacrosBtn.textContent = 'Ver macros';
-        viewMacrosBtn.classList.add('view-macros-button');
-        viewMacrosBtn.addEventListener('click', function(e) {
+        const macrosBtn = document.createElement('button');
+        macrosBtn.classList.add('view-macros-button');
+        macrosBtn.textContent = 'Ver macros';
+        macrosBtn.addEventListener('click', e => {
           e.stopPropagation();
           openModal(item.secondary_image_url);
         });
-        productCard.appendChild(viewMacrosBtn);
+        card.appendChild(macrosBtn);
       }
 
-      productContainer.appendChild(productCard);
+      productContainer.appendChild(card);
     });
 
-    pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-    prevPageBtn.disabled = (currentPage === 1);
-    nextPageBtn.disabled = (currentPage === totalPages);
+    updatePaginationInfo(currentPage, totalPages);
+    disableAllPagination(false);
+
+    // Deshabilitar "Anterior" si estás en la página 1, y "Siguiente" si estás en la última
+    prevPageBtnTop.disabled = (currentPage === 1);
+    nextPageBtnTop.disabled = (currentPage === totalPages);
+    prevPageBtnBottom.disabled = (currentPage === 1);
+    nextPageBtnBottom.disabled = (currentPage === totalPages);
   }
 
-  /**
-   * Filtra productos según el valor del buscador (ignorando acentos).
-   */
-  function filterBySearch(value) {
-    // Eliminamos acentos y pasamos a minúsculas
-    const lowerValue = removeDiacritics(value.toLowerCase());
+  // Actualiza la info de paginación en top y bottom
+  function updatePaginationInfo(page, total) {
+    pageInfoTop.textContent = (total === 0) ? '' : `Página ${page} de ${total}`;
+    pageInfoBottom.textContent = (total === 0) ? '' : `Página ${page} de ${total}`;
+  }
 
-    if (!lowerValue) {
+  // Deshabilita todos los botones de paginación si no hay productos
+  function disableAllPagination(disable) {
+    prevPageBtnTop.disabled = disable;
+    nextPageBtnTop.disabled = disable;
+    prevPageBtnBottom.disabled = disable;
+    nextPageBtnBottom.disabled = disable;
+  }
+
+  // Buscador ignorando acentos
+  function filterBySearch(value) {
+    const val = removeDiacritics(value.toLowerCase());
+    if (!val) {
       currentProducts = productsData;
     } else {
-      // Búsqueda sencilla: el nombre debe incluir TODAS las palabras
-      const tokens = lowerValue.split(/\s+/).filter(Boolean);
       currentProducts = productsData.filter(item => {
-        const normalizedName = removeDiacritics((item.name || '').toLowerCase());
-        return tokens.every(token => normalizedName.includes(token));
+        const name = removeDiacritics((item.name || '').toLowerCase());
+        return name.includes(val);
       });
     }
     currentPage = 1;
     renderProducts(currentProducts);
   }
 
-  /**
-   * Abre el modal mostrando la imagen secundaria
-   */
-  function openModal(imageUrl) {
+  // Abrir modal con la imagen secundaria
+  function openModal(url) {
     modal.style.display = 'block';
-    modalImg.src = imageUrl;
+    modalImg.src = url;
   }
 
-  // Cerrar modal
+  // Eventos del modal
   modalClose.addEventListener('click', () => {
     modal.style.display = 'none';
   });
-  modal.addEventListener('click', (e) => {
+  modal.addEventListener('click', e => {
     if (e.target === modal) {
       modal.style.display = 'none';
     }
   });
 
   // Eventos de búsqueda
-  searchInput.addEventListener('input', function() {
+  searchInput.addEventListener('input', () => {
     filterBySearch(searchInput.value);
   });
 
-  // Botón "Todos"
   showAllBtn.addEventListener('click', () => {
-    console.log('Mostrando todos los productos');
     currentPage = 1;
     currentProducts = productsData;
     renderProducts(currentProducts);
   });
 
-  // Selección de "items per page"
+  // Eventos de paginación
   itemsPerPageSelect.addEventListener('change', () => {
     itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
     currentPage = 1;
     renderProducts(currentProducts);
   });
 
-  // Botones "Anterior" y "Siguiente"
-  prevPageBtn.addEventListener('click', () => {
+  // Paginación superior
+  prevPageBtnTop.addEventListener('click', () => {
     currentPage--;
     renderProducts(currentProducts);
   });
-  nextPageBtn.addEventListener('click', () => {
+  nextPageBtnTop.addEventListener('click', () => {
+    currentPage++;
+    renderProducts(currentProducts);
+  });
+
+  // Paginación inferior
+  prevPageBtnBottom.addEventListener('click', () => {
+    currentPage--;
+    renderProducts(currentProducts);
+  });
+  nextPageBtnBottom.addEventListener('click', () => {
     currentPage++;
     renderProducts(currentProducts);
   });
