@@ -124,7 +124,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Precio
         const price = document.createElement('p');
         price.classList.add('price');
-        price.textContent = item.price || '';
+  
+        // Añadimos el símbolo "€" si no está ya presente
+        let priceText = item.price || '';
+        if (priceText && !priceText.includes('€')) {
+          priceText += ' €';
+        }
+        price.textContent = priceText;
         productCard.appendChild(price);
   
         // Botón "Ver macros" si existe imagen secundaria

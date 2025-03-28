@@ -8,6 +8,7 @@
   body {
     font-family: Arial, sans-serif;
     background: #fdfdfd;
+    line-height: 1.4;
   }
   
   /* Encabezado con el input de búsqueda */
@@ -19,21 +20,32 @@
   
   #search-input {
     width: 300px;
+    max-width: 90%;
     padding: 0.5rem;
     font-size: 1rem;
+    border: 1px solid #ccc;
   }
   
-  /* Contenedor principal */
+  /* Contenedor principal (aside + main) */
   .container {
     display: flex;
     min-height: 90vh;
+    /* Para que el aside no baje en escritorio */
+    align-items: flex-start;
   }
   
-  /* Menú lateral */
+  /* Menú lateral (categorías) */
   aside {
     width: 220px;
     background-color: #eee;
     padding: 1rem;
+  
+    /* Sticky en pantallas grandes */
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 0px);
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
   }
   
   aside h2 {
@@ -48,6 +60,7 @@
     background-color: #ccc;
     border: none;
     cursor: pointer;
+    border-radius: 4px;
   }
   
   .show-all-button:hover {
@@ -64,13 +77,14 @@
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     transition: background 0.2s;
+    border-radius: 4px;
   }
   
   #category-list li:hover {
     background-color: #ccc;
   }
   
-  /* Sección principal */
+  /* Sección principal (productos + paginación) */
   main {
     flex: 1;
     padding: 1rem;
@@ -80,6 +94,7 @@
   /* Controles de paginación */
   #pagination-controls {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
@@ -91,6 +106,20 @@
   
   #page-info {
     font-weight: bold;
+  }
+  
+  #prev-page,
+  #next-page {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ccc;
+    background-color: #eee;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  #prev-page:hover,
+  #next-page:hover {
+    background-color: #ddd;
   }
   
   /* Contenedor de productos en grid */
@@ -180,4 +209,32 @@
     font-size: 40px;
     font-weight: bold;
     cursor: pointer;
+  }
+  
+  /* ==========================
+     MEDIA QUERIES PARA MÓVILES
+     ========================== */
+  @media (max-width: 768px) {
+    /* Cambiamos a diseño de 1 columna */
+    .container {
+      flex-direction: column;
+    }
+  
+    aside {
+      position: static; /* Deja de ser sticky en móvil */
+      width: 100%;
+      height: auto;
+      overflow-y: visible;
+      border-right: none;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+  
+    #product-container {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+  
+    #search-input {
+      max-width: 100%;
+    }
   }
