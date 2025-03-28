@@ -1,53 +1,87 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-input');
     const categoryList = document.getElementById('category-list');
+    const showAllBtn = document.getElementById('show-all');
+  
     const productContainer = document.getElementById('product-container');
   
-    let productsData = [];
+    // Controles de paginación
+    const itemsPerPageSelect = document.getElementById('items-per-page');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+  
+    // Datos globales
+    let productsData = [];     // Todos los productos
+    let currentProducts = [];  // Productos filtrados (por búsqueda o categoría)
     let categories = [];
   
+    // Paginación
+    let currentPage = 1;
+    let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto 20
+  
     // Cargamos el CSV usando Papa Parse
-    Papa.parse('data/processed/products_macro.csv', {
+    Papa.parse('data/products_macro.csv', {
       download: true,
-      header: true, // Para que la primera fila del CSV se use como cabeceras
+      header: true,
       complete: function(results) {
         // Guardamos los datos parseados
         productsData = results.data;
+        // Inicialmente, currentProducts = todos
+        currentProducts = productsData;
   
         // Extraemos categorías únicas
         categories = [...new Set(productsData.map(item => item.Category))];
   
-        // Pintamos la lista de categorías en el aside
+        // Pintamos la lista de categorías
         renderCategories();
   
-        // Pintamos todos los productos inicialmente
-        renderProducts(productsData);
+        // Renderizamos la primera página
+        renderProducts(currentProducts);
       }
     });
   
-    // Función para renderizar la lista de categorías
+    // Renderiza las categorías en el aside
     function renderCategories() {
+      categoryList.innerHTML = '';
+  
       categories.forEach(category => {
         const li = document.createElement('li');
         li.textContent = category;
   
-        // Al hacer clic en una categoría, filtramos los productos
+        // Al hacer clic en una categoría, filtramos
         li.addEventListener('click', () => {
-          const filtered = productsData.filter(item => item.Category === category);
-          renderProducts(filtered);
+          // Reiniciamos la página
+          currentPage = 1;
+          // Filtramos
+          currentProducts = productsData.filter(item => item.Category === category);
+          // Renderizamos
+          renderProducts(currentProducts);
         });
   
         categoryList.appendChild(li);
       });
     }
   
-    // Función para renderizar los productos en el contenedor principal
+    // Renderiza los productos con paginación
     function renderProducts(data) {
-      // Limpiamos el contenedor
+      // Calculamos total de páginas
+      const totalPages = Math.ceil(data.length / itemsPerPage);
+  
+      // Ajustamos currentPage si se pasa de rango
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+  
+      // Cortamos el array según la página
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedData = data.slice(startIndex, endIndex);
+  
+      // Limpiamos contenedor
       productContainer.innerHTML = '';
   
-      data.forEach(item => {
-        // Creamos un card para cada producto
+      // Renderizamos cada producto
+      paginatedData.forEach(item => {
         const productCard = document.createElement('div');
         productCard.classList.add('product-card');
   
@@ -66,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         price.classList.add('price');
         price.textContent = item.price;
   
-        // Añadimos los elementos al card
+        // Añadimos al card
         productCard.appendChild(img);
         productCard.appendChild(title);
         productCard.appendChild(subtitle);
@@ -75,21 +109,58 @@ document.addEventListener('DOMContentLoaded', function() {
         // Metemos el card en el contenedor
         productContainer.appendChild(productCard);
       });
+  
+      // Actualizamos la info de paginación
+      pageInfo.textContent = `Página ${currentPage} de ${totalPages || 1}`;
+  
+      // Deshabilitamos botones si no hay más páginas
+      prevPageBtn.disabled = (currentPage === 1);
+      nextPageBtn.disabled = (currentPage === totalPages || totalPages === 0);
     }
   
-    // Manejador de evento para el buscador
-    searchInput.addEventListener('input', function() {
-      const searchValue = searchInput.value.toLowerCase();
-  
-      if (!searchValue) {
-        // Si el buscador está vacío, mostramos todos los productos
-        renderProducts(productsData);
+    // Función para filtrar productos por texto
+    function filterBySearch(value) {
+      // Si está vacío, mostramos todo
+      if (!value) {
+        currentProducts = productsData;
       } else {
-        // Filtramos por nombre
-        const filtered = productsData.filter(item =>
-          item.name.toLowerCase().includes(searchValue)
+        const lowerValue = value.toLowerCase();
+        currentProducts = productsData.filter(item =>
+          item.name.toLowerCase().includes(lowerValue)
         );
-        renderProducts(filtered);
       }
+      // Volvemos a la página 1 y renderizamos
+      currentPage = 1;
+      renderProducts(currentProducts);
+    }
+  
+    // Evento para el input de búsqueda (dinámico)
+    searchInput.addEventListener('input', function() {
+      filterBySearch(searchInput.value);
+    });
+  
+    // Botón "Todos" para mostrar todos los productos
+    showAllBtn.addEventListener('click', () => {
+      currentPage = 1;
+      currentProducts = productsData;
+      renderProducts(currentProducts);
+    });
+  
+    // Cambio de "items per page"
+    itemsPerPageSelect.addEventListener('change', () => {
+      itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
+      currentPage = 1;
+      renderProducts(currentProducts);
+    });
+  
+    // Botones "Anterior" y "Siguiente"
+    prevPageBtn.addEventListener('click', () => {
+      currentPage--;
+      renderProducts(currentProducts);
+    });
+  
+    nextPageBtn.addEventListener('click', () => {
+      currentPage++;
+      renderProducts(currentProducts);
     });
   });

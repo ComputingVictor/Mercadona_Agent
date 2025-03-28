@@ -40,6 +40,20 @@
     margin-bottom: 0.5rem;
   }
   
+  .show-all-button {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: #ccc;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .show-all-button:hover {
+    background-color: #bbb;
+  }
+  
   #category-list {
     list-style: none;
     padding-left: 0;
@@ -61,6 +75,22 @@
     flex: 1;
     padding: 1rem;
     overflow: auto;
+  }
+  
+  /* Controles de paginación */
+  #pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  #items-per-page {
+    padding: 0.3rem;
+  }
+  
+  #page-info {
+    font-weight: bold;
   }
   
   /* Contenedor de productos en grid */
