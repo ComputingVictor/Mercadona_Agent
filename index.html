@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Productos Mercadona</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Encabezado con buscador -->
+  <header>
+    <input 
+      type="text" 
+      id="search-input" 
+      placeholder="Buscar productos..." 
+      aria-label="Buscador de productos"
+    />
+  </header>
+
+  <!-- Contenedor principal que divide en aside (categorías) y main (collage productos) -->
+  <div class="container">
+    <aside>
+      <h2>Categorías</h2>
+      <ul id="category-list"></ul>
+    </aside>
+
+    <main>
+      <div id="product-container"></div>
+    </main>
+  </div>
+
+  <!-- Papa Parse para leer CSV directamente desde el front -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- Tu script principal -->
+  <script src="script.js"></script>
+</body>
+</html>
