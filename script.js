@@ -118,6 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
       subtitle.textContent = item.subtitle || '';
       card.appendChild(subtitle);
 
+
+      // NUEVO: categoría en pequeñito
+      const categoryText = document.createElement('p');
+      categoryText.classList.add('category-label'); // Le daremos estilo en el CSS
+      categoryText.textContent = item.Category;     // Lo que contenga la propiedad “Category”
+      productCard.appendChild(categoryText);
+
       // Precio
       const price = document.createElement('p');
       price.classList.add('price');

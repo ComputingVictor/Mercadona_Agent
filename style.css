@@ -129,6 +129,12 @@ main {
   gap: 1rem;
 }
 
+.category-label {
+  font-size: 0.8rem;  /* Tamaño de letra reducido */
+  color: #999;        /* Color gris tenue */
+  margin: 0.25rem 0;
+}
+
 /* Card de producto */
 .product-card {
   border: 1px solid #ccc;
