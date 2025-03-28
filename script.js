@@ -25,32 +25,33 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
     let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto, 20
   
-    // Carga el CSV usando Papa Parse
+    // Cargamos el CSV usando Papa Parse
     Papa.parse('data/processed/products_macro.csv', {
       download: true,
       header: true,
       complete: function(results) {
         console.log('Resultados PapaParse:', results);
-        // Verifica si se han cargado productos
+        // Verificamos si se han cargado productos
         if (!results || !results.data || results.data.length === 0) {
           console.error("No se han cargado datos desde el CSV. Revisa la ruta y el formato del archivo.");
           productContainer.innerHTML = '<p>Error al cargar los productos.</p>';
           return;
         }
   
-        // Filtra filas vacías (por si acaso)
+        // Filtramos filas vacías (por si acaso)
         productsData = results.data.filter(item => item.Category && item.main_image_url);
         console.log(`Se han cargado ${productsData.length} productos válidos.`);
         
-        // currentProducts = todos inicialmente
+        // Inicialmente, currentProducts = todos
         currentProducts = productsData;
   
-        // Extrae categorías únicas
+        // Extraemos categorías únicas
         categories = [...new Set(productsData.map(item => item.Category))];
         console.log('Categorías detectadas:', categories);
   
-        // Renderiza categorías y la primera página de productos
+        // Pintamos la lista de categorías
         renderCategories();
+        // Renderizamos la primera página
         renderProducts(currentProducts);
       },
       error: function(err) {
@@ -78,11 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     /**
-     * Renderiza los productos con paginación
+     * Renderiza los productos de 'data' teniendo en cuenta la paginación
      */
     function renderProducts(data) {
       console.log('Renderizando productos. Total filtrado:', data.length);
-  
       if (!data || data.length === 0) {
         productContainer.innerHTML = '<p>No hay productos para mostrar.</p>';
         pageInfo.textContent = '';
@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const paginatedData = data.slice(startIndex, endIndex);
   
       productContainer.innerHTML = '';
-  
       paginatedData.forEach(item => {
         const productCard = document.createElement('div');
         productCard.classList.add('product-card');
@@ -122,20 +121,19 @@ document.addEventListener('DOMContentLoaded', function() {
         subtitle.textContent = item.subtitle || '';
         productCard.appendChild(subtitle);
   
-        // Precio (forzamos el "€")
+        // Precio
         const price = document.createElement('p');
         price.classList.add('price');
   
+        // Añadimos el símbolo "€" si no está ya presente
         let priceText = item.price || '';
-        // Quitamos cualquier "€" anterior y añadimos uno nuevo
-        priceText = priceText.replace('€', '').trim();
-        if (priceText) {
+        if (priceText && !priceText.includes('€')) {
           priceText += ' €';
         }
         price.textContent = priceText;
         productCard.appendChild(price);
   
-        // Botón "Ver macros" si hay imagen secundaria
+        // Botón "Ver macros" si existe imagen secundaria
         if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
           const viewMacrosBtn = document.createElement('button');
           viewMacrosBtn.textContent = 'Ver macros';
@@ -156,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     /**
-     * Filtra productos según el texto del buscador
+     * Filtra productos según el valor del buscador
      */
     function filterBySearch(value) {
       if (!value) {
@@ -172,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     /**
-     * Abre el modal con la imagen secundaria
+     * Abre el modal mostrando la imagen pasada como parámetro
      */
     function openModal(imageUrl) {
       modal.style.display = 'block';
@@ -189,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   
-    // Eventos de búsqueda, categorías y paginación
+    // Eventos para búsqueda, categorías y paginación
     searchInput.addEventListener('input', function() {
       filterBySearch(searchInput.value);
     });

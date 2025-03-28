@@ -1,53 +1,21 @@
-/* ==========================
-   RESET BÁSICO
-   ========================== */
-   * {
+/* Reset básico */
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
   
   body {
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    background: #fafafa;
-    color: #333;
+    font-family: Arial, sans-serif;
+    background: #fdfdfd;
     line-height: 1.4;
   }
   
-  /* ==========================
-     ENCABEZADO (HEADER)
-     ========================== */
+  /* Encabezado con el input de búsqueda */
   header {
-    background-color: #3fa860; /* Color principal */
-    padding: 0.75rem 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-  
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .brand-logo {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-  }
-  
-  .brand-title {
-    font-size: 1.3rem;
-    color: #fff;
-    font-weight: bold;
-  }
-  
-  .search-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #f5f5f5;
+    padding: 1rem;
+    text-align: center;
   }
   
   #search-input {
@@ -56,36 +24,32 @@
     padding: 0.5rem;
     font-size: 1rem;
     border: 1px solid #ccc;
-    border-radius: 4px;
   }
   
-  /* ==========================
-     LAYOUT PRINCIPAL
-     ========================== */
+  /* Contenedor principal (aside + main) */
   .container {
     display: flex;
-    min-height: 88vh; /* Resto de pantalla debajo del header */
+    min-height: 90vh;
+    /* Para que el aside no baje en escritorio */
     align-items: flex-start;
   }
   
-  /* ==========================
-     MENÚ LATERAL (ASIDE)
-     ========================== */
+  /* Menú lateral (categorías) */
   aside {
     width: 220px;
-    background-color: #2b7847; /* Un verde más oscuro */
+    background-color: #eee;
     padding: 1rem;
-    color: #fff;
   
-    position: sticky;  /* Sticky en escritorio */
+    /* Sticky en pantallas grandes */
+    position: sticky;
     top: 0;
     height: calc(100vh - 0px);
     overflow-y: auto;
+    border-right: 1px solid #ccc;
   }
   
   aside h2 {
     margin-bottom: 0.5rem;
-    font-size: 1.1rem;
   }
   
   .show-all-button {
@@ -93,17 +57,14 @@
     width: 100%;
     margin-bottom: 1rem;
     padding: 0.5rem;
-    background-color: #fff;
-    color: #2b7847;
+    background-color: #ccc;
     border: none;
     cursor: pointer;
     border-radius: 4px;
-    font-weight: bold;
-    text-align: center;
   }
   
   .show-all-button:hover {
-    background-color: #f0f0f0;
+    background-color: #bbb;
   }
   
   #category-list {
@@ -114,27 +75,23 @@
   #category-list li {
     margin: 0.5rem 0;
     cursor: pointer;
-    padding: 0.4rem 0.6rem;
-    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
     transition: background 0.2s;
+    border-radius: 4px;
   }
   
   #category-list li:hover {
-    background-color: #3fa860;
+    background-color: #ccc;
   }
   
-  /* ==========================
-     SECCIÓN PRINCIPAL (MAIN)
-     ========================== */
+  /* Sección principal (productos + paginación) */
   main {
     flex: 1;
     padding: 1rem;
     overflow: auto;
   }
   
-  /* ==========================
-     PAGINACIÓN
-     ========================== */
+  /* Controles de paginación */
   #pagination-controls {
     display: flex;
     flex-wrap: wrap;
@@ -145,8 +102,6 @@
   
   #items-per-page {
     padding: 0.3rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
   }
   
   #page-info {
@@ -155,51 +110,48 @@
   
   #prev-page,
   #next-page {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    background-color: #3fa860;
-    color: #fff;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ccc;
+    background-color: #eee;
     cursor: pointer;
     border-radius: 4px;
-    font-weight: bold;
   }
   
   #prev-page:hover,
   #next-page:hover {
-    background-color: #36914e;
+    background-color: #ddd;
   }
   
-  /* ==========================
-     GRID DE PRODUCTOS
-     ========================== */
+  /* Contenedor de productos en grid */
   #product-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
   }
   
+  /* Card de producto */
   .product-card {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.5rem;
     background-color: #fff;
-    border-radius: 6px;
-    padding: 0.75rem;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: box-shadow 0.2s;
   }
   
   .product-card:hover {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
   }
   
   .product-card img {
     max-width: 100%;
     height: auto;
-    margin-bottom: 0.5rem;
+    border-radius: 4px;
   }
   
   .product-card h3 {
     font-size: 1rem;
-    margin-bottom: 0.4rem;
+    margin: 0.5rem 0;
   }
   
   .subtitle {
@@ -208,36 +160,35 @@
   }
   
   .price {
-    margin-top: 0.5rem;
     font-weight: bold;
-    color: #333;
+    color: #2b2b2b;
+    margin-top: 0.5rem;
   }
   
-  /* Botón "Ver macros" */
+  /* Botón para ver macros */
   .view-macros-button {
-    margin-top: 0.6rem;
-    padding: 0.4rem 0.6rem;
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.5rem;
     background-color: #007BFF;
     border: none;
     color: #fff;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 3px;
     font-size: 0.9rem;
   }
-  
   .view-macros-button:hover {
     background-color: #0056b3;
   }
   
-  /* ==========================
-     MODAL (VER MACROS)
-     ========================== */
+  /* Estilos para el modal */
   .modal {
     display: none;
     position: fixed;
     z-index: 1000;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.8);
   }
@@ -248,12 +199,12 @@
     margin-top: 5%;
     max-width: 90%;
     max-height: 80%;
-    border-radius: 6px;
   }
   
   .modal-close {
     position: absolute;
-    top: 20px; right: 35px;
+    top: 20px;
+    right: 35px;
     color: #f1f1f1;
     font-size: 40px;
     font-weight: bold;
@@ -261,23 +212,10 @@
   }
   
   /* ==========================
-     RESPONSIVE (MÓVIL)
+     MEDIA QUERIES PARA MÓVILES
      ========================== */
   @media (max-width: 768px) {
-    header {
-      flex-direction: column;
-      gap: 1rem;
-    }
-  
-    .brand-title {
-      font-size: 1.2rem;
-    }
-  
-    #search-input {
-      width: 90%;
-      max-width: 400px;
-    }
-  
+    /* Cambiamos a diseño de 1 columna */
     .container {
       flex-direction: column;
     }
@@ -286,13 +224,17 @@
       position: static; /* Deja de ser sticky en móvil */
       width: 100%;
       height: auto;
+      overflow-y: visible;
       border-right: none;
       border-bottom: 1px solid #ccc;
       margin-bottom: 1rem;
-      background-color: #2b7847;
     }
   
     #product-container {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+  
+    #search-input {
+      max-width: 100%;
     }
   }
