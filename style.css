@@ -1,21 +1,53 @@
-/* Reset básico */
-* {
+/* ==========================
+   RESET BÁSICO
+   ========================== */
+   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
   
   body {
-    font-family: Arial, sans-serif;
-    background: #fdfdfd;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: #fafafa;
+    color: #333;
     line-height: 1.4;
   }
   
-  /* Encabezado con el input de búsqueda */
+  /* ==========================
+     ENCABEZADO (HEADER)
+     ========================== */
   header {
-    background-color: #f5f5f5;
-    padding: 1rem;
-    text-align: center;
+    background-color: #3fa860; /* Color principal */
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+  
+  .brand-title {
+    font-size: 1.3rem;
+    color: #fff;
+    font-weight: bold;
+  }
+  
+  .search-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   #search-input {
@@ -24,32 +56,36 @@
     padding: 0.5rem;
     font-size: 1rem;
     border: 1px solid #ccc;
+    border-radius: 4px;
   }
   
-  /* Contenedor principal (aside + main) */
+  /* ==========================
+     LAYOUT PRINCIPAL
+     ========================== */
   .container {
     display: flex;
-    min-height: 90vh;
-    /* Para que el aside no baje en escritorio */
+    min-height: 88vh; /* Resto de pantalla debajo del header */
     align-items: flex-start;
   }
   
-  /* Menú lateral (categorías) */
+  /* ==========================
+     MENÚ LATERAL (ASIDE)
+     ========================== */
   aside {
     width: 220px;
-    background-color: #eee;
+    background-color: #2b7847; /* Un verde más oscuro */
     padding: 1rem;
+    color: #fff;
   
-    /* Sticky en pantallas grandes */
-    position: sticky;
+    position: sticky;  /* Sticky en escritorio */
     top: 0;
     height: calc(100vh - 0px);
     overflow-y: auto;
-    border-right: 1px solid #ccc;
   }
   
   aside h2 {
     margin-bottom: 0.5rem;
+    font-size: 1.1rem;
   }
   
   .show-all-button {
@@ -57,14 +93,17 @@
     width: 100%;
     margin-bottom: 1rem;
     padding: 0.5rem;
-    background-color: #ccc;
+    background-color: #fff;
+    color: #2b7847;
     border: none;
     cursor: pointer;
     border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
   }
   
   .show-all-button:hover {
-    background-color: #bbb;
+    background-color: #f0f0f0;
   }
   
   #category-list {
@@ -75,23 +114,27 @@
   #category-list li {
     margin: 0.5rem 0;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    transition: background 0.2s;
+    padding: 0.4rem 0.6rem;
     border-radius: 4px;
+    transition: background 0.2s;
   }
   
   #category-list li:hover {
-    background-color: #ccc;
+    background-color: #3fa860;
   }
   
-  /* Sección principal (productos + paginación) */
+  /* ==========================
+     SECCIÓN PRINCIPAL (MAIN)
+     ========================== */
   main {
     flex: 1;
     padding: 1rem;
     overflow: auto;
   }
   
-  /* Controles de paginación */
+  /* ==========================
+     PAGINACIÓN
+     ========================== */
   #pagination-controls {
     display: flex;
     flex-wrap: wrap;
@@ -102,6 +145,8 @@
   
   #items-per-page {
     padding: 0.3rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
   }
   
   #page-info {
@@ -110,48 +155,51 @@
   
   #prev-page,
   #next-page {
-    padding: 0.3rem 0.6rem;
-    border: 1px solid #ccc;
-    background-color: #eee;
+    padding: 0.4rem 0.8rem;
+    border: none;
+    background-color: #3fa860;
+    color: #fff;
     cursor: pointer;
     border-radius: 4px;
+    font-weight: bold;
   }
   
   #prev-page:hover,
   #next-page:hover {
-    background-color: #ddd;
+    background-color: #36914e;
   }
   
-  /* Contenedor de productos en grid */
+  /* ==========================
+     GRID DE PRODUCTOS
+     ========================== */
   #product-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
   }
   
-  /* Card de producto */
   .product-card {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 0.5rem;
     background-color: #fff;
+    border-radius: 6px;
+    padding: 0.75rem;
     text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: box-shadow 0.2s;
   }
   
   .product-card:hover {
-    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
   
   .product-card img {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    margin-bottom: 0.5rem;
   }
   
   .product-card h3 {
     font-size: 1rem;
-    margin: 0.5rem 0;
+    margin-bottom: 0.4rem;
   }
   
   .subtitle {
@@ -160,35 +208,36 @@
   }
   
   .price {
-    font-weight: bold;
-    color: #2b2b2b;
     margin-top: 0.5rem;
+    font-weight: bold;
+    color: #333;
   }
   
-  /* Botón para ver macros */
+  /* Botón "Ver macros" */
   .view-macros-button {
-    margin-top: 0.5rem;
-    padding: 0.3rem 0.5rem;
+    margin-top: 0.6rem;
+    padding: 0.4rem 0.6rem;
     background-color: #007BFF;
     border: none;
     color: #fff;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 0.9rem;
   }
+  
   .view-macros-button:hover {
     background-color: #0056b3;
   }
   
-  /* Estilos para el modal */
+  /* ==========================
+     MODAL (VER MACROS)
+     ========================== */
   .modal {
     display: none;
     position: fixed;
     z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.8);
   }
@@ -199,12 +248,12 @@
     margin-top: 5%;
     max-width: 90%;
     max-height: 80%;
+    border-radius: 6px;
   }
   
   .modal-close {
     position: absolute;
-    top: 20px;
-    right: 35px;
+    top: 20px; right: 35px;
     color: #f1f1f1;
     font-size: 40px;
     font-weight: bold;
@@ -212,10 +261,23 @@
   }
   
   /* ==========================
-     MEDIA QUERIES PARA MÓVILES
+     RESPONSIVE (MÓVIL)
      ========================== */
   @media (max-width: 768px) {
-    /* Cambiamos a diseño de 1 columna */
+    header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  
+    .brand-title {
+      font-size: 1.2rem;
+    }
+  
+    #search-input {
+      width: 90%;
+      max-width: 400px;
+    }
+  
     .container {
       flex-direction: column;
     }
@@ -224,17 +286,13 @@
       position: static; /* Deja de ser sticky en móvil */
       width: 100%;
       height: auto;
-      overflow-y: visible;
       border-right: none;
       border-bottom: 1px solid #ccc;
       margin-bottom: 1rem;
+      background-color: #2b7847;
     }
   
     #product-container {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-  
-    #search-input {
-      max-width: 100%;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
   }

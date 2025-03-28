@@ -2,25 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Productos Mercadona</title>
+  <title>Mercadona - Productos</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Encabezado con buscador -->
+  <!-- Cabecera con marca y buscador -->
   <header>
-    <input 
-      type="text" 
-      id="search-input" 
-      placeholder="Buscar productos..." 
-      aria-label="Buscador de productos"
-    />
+    <div class="brand">
+      <img src="https://cdn-icons-png.flaticon.com/512/3208/3208570.png" alt="Logo" class="brand-logo" />
+      <h1 class="brand-title">Mercadona</h1>
+    </div>
+    <div class="search-container">
+      <input 
+        type="text" 
+        id="search-input" 
+        placeholder="Buscar productos..." 
+        aria-label="Buscador de productos"
+      />
+    </div>
   </header>
 
-  <!-- Contenedor principal con aside (categorías) y main (productos + paginación) -->
+  <!-- Contenedor principal: aside (categorías) + main (productos y paginación) -->
   <div class="container">
     <aside>
       <h2>Categorías</h2>
-      <!-- Botón para mostrar "Todos" -->
       <button id="show-all" class="show-all-button">Todos</button>
       <ul id="category-list"></ul>
     </aside>
@@ -44,7 +49,7 @@
     </main>
   </div>
 
-  <!-- Modal para mostrar la imagen de macros -->
+  <!-- Modal para mostrar imagen secundaria (macros) -->
   <div id="modal" class="modal">
     <span id="modal-close" class="modal-close">&times;</span>
     <img id="modal-img" class="modal-content">
@@ -52,7 +57,7 @@
 
   <!-- Papa Parse para leer CSV directamente -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <!-- Tu script principal -->
+  <!-- Script principal -->
   <script src="script.js"></script>
 </body>
 </html>
