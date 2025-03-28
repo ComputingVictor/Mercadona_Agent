@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let itemsPerPage = parseInt(itemsPerPageSelect.value, 10); // Por defecto, 20
   
     // Cargamos el CSV usando Papa Parse
-    Papa.parse('data/products_macro.csv', {
+    Papa.parse('data/raw/products_macro.csv', {
       download: true,
       header: true,
       complete: function(results) {
