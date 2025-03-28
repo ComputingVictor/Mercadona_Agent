@@ -141,65 +141,57 @@ main {
   border-radius: 4px;
   background-color: #fff;
   text-align: center;
-  transition: box-shadow 0.2s;
   padding: 0.5rem;
 
-  /* Para alinear el botón al fondo */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
 
-  /* Ajusta la altura a lo que necesites */
-  min-height: 330px;
-  /* Si quieres forzar que sea siempre igual (con recortes de texto),
-     puedes usar height: 330px; overflow: hidden; */
-}
+  height: 100%; /* Muy importante para igualar alturas */
 
-.product-card:hover {
-  box-shadow: 0 0 6px rgba(0,0,0,0.2);
-}
-
-.product-card img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.product-card h3 {
-  font-size: 1rem;
-  margin: 0.5rem 0;
-  flex: 0 0 auto;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  color: #666;
-  flex: 0 0 auto;
-  margin: 0.25rem 0;
-}
-
-.price {
-  font-weight: bold;
-  color: #2b2b2b;
-  margin: 0.5rem 0;
-  flex: 0 0 auto;
-}
-
-/* Botón "Ver macros" */
-.view-macros-button {
-  margin-top: auto;       /* Empuja el botón al final del flex container */
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0.4rem 0.6rem;
-  background-color: #007BFF;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
+     .product-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    
+    .product-card h3 {
+      font-size: 1rem;
+      margin: 0.5rem 0;
+      min-height: 2.5em; /* Fuerza altura homogénea */
+    }
+    
+    .subtitle {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 0.25rem 0;
+      min-height: 2.2em; /* Igual altura para todos */
+    }
+    
+    .category-label {
+      font-size: 0.8rem;
+      color: #999;
+      margin: 0.25rem 0;
+    }
+    
+    .price {
+      font-weight: bold;
+      color: #2b2b2b;
+      margin: 0.5rem 0;
+      min-height: 1.5em;
+    }
+    
+    .view-macros-button {
+      margin-top: auto; /* Empuja el botón al fondo */
+      padding: 0.4rem 0.6rem;
+      background-color: #007BFF;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
 
 .view-macros-button:hover {
   background-color: #0056b3;
