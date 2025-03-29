@@ -146,6 +146,12 @@ document.addEventListener('DOMContentLoaded', function () {
         card.appendChild(btn);
       }
 
+      else {
+        const placeholder = document.createElement('div');
+        placeholder.style.height = '2rem'; // misma altura aproximada del botón
+        card.appendChild(placeholder);
+      }
+
       productContainer.appendChild(card);
     });
 
