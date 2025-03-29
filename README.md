@@ -1,6 +1,10 @@
 # ¿Qué hay en el súper?
 
+![image](https://github.com/user-attachments/assets/0f9925a0-a05a-4db5-bc5f-854d46655102)
+
+
 Este proyecto consiste en una aplicación web que muestra un catálogo de productos de supermercado, permitiendo realizar búsquedas, filtrar por categorías, agregar favoritos, ver información de macronutrientes y mucho más. Además, se incluyen *notebooks* de análisis de datos para procesar la información de productos y visualizar distintos aspectos de los mismos.
+
 
 Puedes visitar la aplicación en funcionamiento aquí:  
 [**https://computingvictor.github.io/Mercadona_Agent/**](https://computingvictor.github.io/Mercadona_Agent/)
@@ -52,7 +56,7 @@ También se incluyen notebooks en Jupyter para análisis y procesamiento de los 
 
 ## Estructura del Proyecto
 
-\`\`\`
+```
 .
 ├── 01_Init_Project.ipynb
 ├── 02_Products_Analysis.ipynb
@@ -66,7 +70,7 @@ También se incluyen notebooks en Jupyter para análisis y procesamiento de los 
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
-\`\`\`
+```
 
 ---
 
@@ -89,25 +93,24 @@ También se incluyen notebooks en Jupyter para análisis y procesamiento de los 
 ## Cómo Ejecutar el Proyecto
 
 1. Clonar el repositorio:
-\`\`\`bash
+```bash
 git clone https://github.com/ComputingVictor/Mercadona_Agent.git
-\`\`\`
-
+```
 2. Instalar dependencias (opcional):
-\`\`\`bash
+```bash
 cd Mercadona_Agent
 poetry install
-\`\`\`
+```
 
 3. Lanzar servidor local:
-\`\`\`bash
+```bash
 python -m http.server
-\`\`\`
+```
 
 4. Abrir notebooks:
-\`\`\`bash
+```bash
 jupyter notebook
-\`\`\`
+```
 
 ---
 
