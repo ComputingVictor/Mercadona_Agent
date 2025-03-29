@@ -61,8 +61,6 @@ aside {
   background-color: #eee;
   padding: 1rem;
   border-right: 1px solid #ccc;
-  overflow-y: auto;
-  max-height: 100vh;
 }
 
 aside h2 {

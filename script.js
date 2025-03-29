@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', function() {
+// script.js mejorado
+
+document.addEventListener('DOMContentLoaded', function () {
   const searchInput = document.getElementById('search-input');
   const categoryList = document.getElementById('category-list');
   const showAllBtn = document.getElementById('show-all');
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
   Papa.parse('data/processed/products_macro.csv', {
     download: true,
     header: true,
-    complete: function(results) {
+    complete: function (results) {
       if (!results || !results.data || results.data.length === 0) {
         productContainer.innerHTML = '<p>Error al cargar los productos.</p>';
         return;
@@ -52,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
       );
       renderProducts(currentProducts);
     },
-    error: function(err) {
+    error: function (err) {
       productContainer.innerHTML = '<p>Error al cargar el CSV.</p>';
       console.error(err);
     }
@@ -63,7 +65,18 @@ document.addEventListener('DOMContentLoaded', function() {
     categories.forEach(category => {
       const li = document.createElement('li');
       li.textContent = category;
+      li.setAttribute('role', 'button');
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('aria-pressed', 'false');
+
       li.addEventListener('click', () => {
+        document.querySelectorAll('#category-list li').forEach(el => {
+          el.classList.remove('active-category');
+          el.setAttribute('aria-pressed', 'false');
+        });
+        li.classList.add('active-category');
+        li.setAttribute('aria-pressed', 'true');
+
         currentPage = 1;
         currentProducts = productsData.filter(item => item.Category === category);
         currentProducts.sort((a, b) =>
@@ -84,8 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const totalPages = Math.ceil(data.length / itemsPerPage);
-    if (currentPage < 1) currentPage = 1;
-    if (currentPage > totalPages) currentPage = totalPages;
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
 
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
@@ -100,6 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const img = document.createElement('img');
       img.src = item.main_image_url;
       img.alt = item.name;
+      img.onerror = () => { img.src = 'img/placeholder.png'; };
       card.appendChild(img);
 
       const title = document.createElement('h3');
@@ -143,6 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
     nextPageBtnTop.disabled = currentPage === totalPages;
     prevPageBtnBottom.disabled = currentPage === 1;
     nextPageBtnBottom.disabled = currentPage === totalPages;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function updatePaginationInfo(page, total) {
@@ -163,9 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (tokens.length === 0) {
       currentProducts = [...productsData];
-      currentProducts.sort((a, b) =>
-        removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
-      );
     } else {
       currentProducts = productsData.filter(item => {
         const name = removeDiacritics((item.name || '').toLowerCase());
@@ -174,6 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     currentPage = 1;
+    currentProducts.sort((a, b) =>
+      removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
+    );
     renderProducts(currentProducts);
   }
 
@@ -192,13 +207,12 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   showAllBtn.addEventListener('click', () => {
+    document.querySelectorAll('#category-list li').forEach(el => el.classList.remove('active-category'));
     currentPage = 1;
     currentProducts = [...productsData];
-
     currentProducts.sort((a, b) =>
       removeDiacritics(a.name).localeCompare(removeDiacritics(b.name), 'es', { sensitivity: 'base' })
     );
-
     renderProducts(currentProducts);
   });
 
