@@ -21,7 +21,7 @@
       />
     </div>
     <div class="header-right">
-      <span class="username">@Computingvictor</span>
+      <a href="https://github.com/ComputingVictor" target="_blank" class="username">@Computingvictor</a>
     </div>
   </header>
 
@@ -33,7 +33,7 @@
     </aside>
 
     <main>
-      <div id="pagination-controls-top" class="pagination-controls">
+      <div class="pagination-top">
         <label for="items-per-page">Productos por página:</label>
         <select id="items-per-page">
           <option value="20">20</option>
@@ -42,6 +42,9 @@
           <option value="80">80</option>
           <option value="100" selected>100</option>
         </select>
+      </div>
+
+      <div id="pagination-controls-top" class="pagination-controls">
         <button id="prev-page-top">Anterior</button>
         <span id="page-info-top"></span>
         <button id="next-page-top">Siguiente</button>

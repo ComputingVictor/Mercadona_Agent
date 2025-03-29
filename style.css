@@ -46,6 +46,26 @@ header {
   font-size: 0.95rem;
   font-weight: bold;
   color: #555;
+  text-decoration: none;
+}
+
+.username:hover {
+  color: #000;
+}
+
+.active-category {
+  background-color: #ddd;
+  font-weight: bold;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.15);
+}
+
+.pagination-top {
+  text-align: right;
+  margin-bottom: 0.5rem;
+}
+
+.pagination-controls {
+  justify-content: center;
 }
 
 /* Layout */
