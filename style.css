@@ -41,18 +41,6 @@ header {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-
-.username {
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: #555;
-  text-decoration: none;
-}
-
-.username:hover {
-  color: #000;
-}
-
 .active-category {
   background-color: #ddd;
   font-weight: bold;
@@ -72,7 +60,9 @@ header {
 .container {
   display: flex;
   align-items: stretch;
+  min-height: calc(100vh - 80px); /* Altura total menos el header */
 }
+
 
 /* Sidebar */
 aside {
@@ -80,6 +70,41 @@ aside {
   background-color: #eee;
   padding: 1rem;
   border-right: 1px solid #ccc;
+  overflow-y: auto;
+  height: auto;
+  max-height: calc(100vh - 80px); /* Altura limitada para scroll */
+  scrollbar-width: thin;
+  scrollbar-color: #888 #ccc;
+}
+
+aside::-webkit-scrollbar {
+  width: 8px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: #ccc;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.active-category {
+  background-color: #ddd;
+  font-weight: bold;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+}
+
+.username {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #555;
+  text-decoration: none;
+}
+
+.username:hover {
+  color: #000;
 }
 
 aside h2 {
@@ -125,13 +150,16 @@ main {
 }
 
 /* Pagination */
+.pagination-top {
+  text-align: right;
+  margin-bottom: 0.5rem;
+}
+
 .pagination-controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .pagination-controls button {
