@@ -1,5 +1,3 @@
-// script.js completo con mejoras
-
 document.addEventListener('DOMContentLoaded', function () {
   // DOM elements
   const searchInput = document.getElementById('search-input');
@@ -102,19 +100,30 @@ document.addEventListener('DOMContentLoaded', function () {
       const card = document.createElement('div');
       card.classList.add('product-card');
 
+      // Imagen principal
       const img = document.createElement('img');
       img.src = item.main_image_url;
       img.alt = item.name;
       img.onerror = () => { img.src = 'img/placeholder.png'; };
       card.appendChild(img);
 
-      card.innerHTML += `
+      // Contenedor de información textual
+      const cardContent = document.createElement('div');
+      cardContent.classList.add('product-info');
+      cardContent.innerHTML = `
         <h3>${item.name}</h3>
         <p class="subtitle">${item.subtitle || ''}</p>
         <p class="category-label">${item.Category}</p>
-        <p class="price">${item.price ? item.price.trim() + ' €' : ''}</p>
       `;
+      card.appendChild(cardContent);
 
+      // Precio
+      const priceEl = document.createElement('p');
+      priceEl.classList.add('price');
+      priceEl.textContent = item.price ? item.price.trim() + ' €' : '';
+      card.appendChild(priceEl);
+
+      // Acciones (botón macros / favorito)
       const actions = document.createElement('div');
       actions.classList.add('card-actions');
 
