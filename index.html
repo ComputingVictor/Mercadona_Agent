@@ -2,10 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>¿Qué hay en el súper?</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
   <link rel="icon" type="image/png" href="img/image.png" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Agregar FontAwesome para íconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
   <header>
@@ -13,56 +16,101 @@
       <img src="img/image.png" alt="¿Qué hay en el súper?" class="logo-super">
     </div>
     <div class="header-center">
-      <input 
-        type="text" 
-        id="search-input" 
-        placeholder="Buscar productos..." 
-        aria-label="Buscador de productos"
-      />
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Buscar productos..." 
+          aria-label="Buscador de productos"
+        />
+        <button id="clear-search" class="clear-search" aria-label="Borrar búsqueda" title="Borrar búsqueda">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </div>
     <div class="header-right">
-      <a href="https://github.com/ComputingVictor" target="_blank" class="username">@Computingvictor</a>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+        <i class="fas fa-moon"></i>
+      </button>
+      <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
+        <i class="fab fa-github"></i> @Computingvictor
+      </a>
     </div>
   </header>
 
   <div class="container">
-    <aside>
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Mostrar categorías">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <aside id="sidebar">
       <h2>Categorías</h2>
-      <button id="show-all" class="show-all-button">Todos</button>
-      <ul id="category-list"></ul>
+      <button id="show-all" class="show-all-button">
+        <i class="fas fa-list"></i> Todos
+      </button>
+      <ul id="category-list" role="tablist"></ul>
+      
+      <div class="favorites-section">
+        <h2>Favoritos</h2>
+        <div id="favorites-container">
+          <p class="no-favorites">No hay favoritos guardados</p>
+        </div>
+      </div>
     </aside>
 
     <main>
-      <div class="pagination-top">
-        <label for="items-per-page">Productos por página:</label>
-        <select id="items-per-page">
-          <option value="20">20</option>
-          <option value="40">40</option>
-          <option value="60">60</option>
-          <option value="80">80</option>
-          <option value="100" selected>100</option>
-        </select>
+      <div class="controls-top">
+        <div class="sort-options">
+          <label for="sort-select">Ordenar por:</label>
+          <select id="sort-select" aria-label="Ordenar productos">
+            <option value="name">Nombre</option>
+            <option value="price_asc">Precio (menor a mayor)</option>
+            <option value="price_desc">Precio (mayor a menor)</option>
+          </select>
+        </div>
+        
+        <div class="pagination-top">
+          <label for="items-per-page">Productos por página:</label>
+          <select id="items-per-page" aria-label="Productos por página">
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="60">60</option>
+            <option value="80">80</option>
+            <option value="100" selected>100</option>
+          </select>
+        </div>
       </div>
 
       <div id="pagination-controls-top" class="pagination-controls">
-        <button id="prev-page-top">Anterior</button>
+        <button id="prev-page-top" aria-label="Página anterior">
+          <i class="fas fa-chevron-left"></i> Anterior
+        </button>
         <span id="page-info-top"></span>
-        <button id="next-page-top">Siguiente</button>
+        <button id="next-page-top" aria-label="Página siguiente">
+          Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
 
-      <div id="product-container"></div>
+      <div id="product-container" class="product-grid"></div>
 
       <div id="pagination-controls-bottom" class="pagination-controls">
-        <button id="prev-page-bottom">Anterior</button>
+        <button id="prev-page-bottom" aria-label="Página anterior">
+          <i class="fas fa-chevron-left"></i> Anterior
+        </button>
         <span id="page-info-bottom"></span>
-        <button id="next-page-bottom">Siguiente</button>
+        <button id="next-page-bottom" aria-label="Página siguiente">
+          Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </main>
   </div>
 
-  <div id="modal" class="modal">
-    <span id="modal-close" class="modal-close">&times;</span>
-    <img id="modal-img" class="modal-content">
+  <div id="modal" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-content-wrapper">
+      <span id="modal-close" class="modal-close" aria-label="Cerrar">&times;</span>
+      <img id="modal-img" class="modal-content" alt="Información nutricional">
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
