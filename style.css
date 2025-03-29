@@ -454,6 +454,14 @@ main {
   transform: scale(1.05);
 }
 
+/* Contenedor para el texto */
+.product-info {
+  flex: 1; /* Ocupa el espacio disponible para que el precio baje al mismo nivel en todas las tarjetas */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
 .product-card h3 {
   font-size: 1rem;
   margin: 0.8rem 0 0.4rem;
