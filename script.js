@@ -28,10 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
   let productsData = [];
   let currentProducts = [];
   let currentPage = 1;
-  let itemsPerPage = 100;
+  let itemsPerPage = 20;
   let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
 
-  itemsPerPageSelect.value = '100';
+  itemsPerPageSelect.value = '20';
 
   // Helpers
   const removeDiacritics = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
