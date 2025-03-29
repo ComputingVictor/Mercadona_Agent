@@ -2,17 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Que hay en el super?</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>¿Qué hay en el súper?</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
   <link rel="icon" type="image/png" href="img/image.png" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Encabezado con buscador -->
   <header>
     <div class="header-left">
       <img src="img/image.png" alt="¿Qué hay en el súper?" class="logo-super">
     </div>
-  
     <div class="header-center">
       <input 
         type="text" 
@@ -21,59 +20,49 @@
         aria-label="Buscador de productos"
       />
     </div>
-  
     <div class="header-right">
       <span class="username">@Computingvictor</span>
     </div>
   </header>
 
-  <!-- Contenedor principal con aside (categorías) y main (productos + paginación) -->
   <div class="container">
     <aside>
       <h2>Categorías</h2>
-      <!-- Botón para mostrar "Todos" -->
       <button id="show-all" class="show-all-button">Todos</button>
       <ul id="category-list"></ul>
     </aside>
 
     <main>
-      <!-- Controles de paginación (superior) -->
       <div id="pagination-controls-top" class="pagination-controls">
         <label for="items-per-page">Productos por página:</label>
         <select id="items-per-page">
-          <option value="20" selected>20</option>
+          <option value="20">20</option>
           <option value="40">40</option>
           <option value="60">60</option>
           <option value="80">80</option>
-          <option value="100">100</option>
+          <option value="100" selected>100</option>
         </select>
         <button id="prev-page-top">Anterior</button>
         <span id="page-info-top"></span>
         <button id="next-page-top">Siguiente</button>
       </div>
 
-      <!-- Contenedor donde se muestran los productos -->
       <div id="product-container"></div>
 
-      <!-- Controles de paginación (inferior) -->
       <div id="pagination-controls-bottom" class="pagination-controls">
         <button id="prev-page-bottom">Anterior</button>
         <span id="page-info-bottom"></span>
         <button id="next-page-bottom">Siguiente</button>
       </div>
-
     </main>
   </div>
 
-  <!-- Modal para mostrar la imagen de macros -->
   <div id="modal" class="modal">
     <span id="modal-close" class="modal-close">&times;</span>
     <img id="modal-img" class="modal-content">
   </div>
 
-  <!-- Papa Parse para leer CSV directamente -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <!-- Tu script principal -->
   <script src="script.js"></script>
 </body>
 </html>
