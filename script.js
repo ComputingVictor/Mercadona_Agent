@@ -108,12 +108,29 @@ document.addEventListener('DOMContentLoaded', function () {
       img.onerror = () => { img.src = 'img/placeholder.png'; };
       card.appendChild(img);
 
-      card.innerHTML += `
-        <h3>${item.name}</h3>
-        <p class="subtitle">${item.subtitle || ''}</p>
-        <p class="category-label">${item.Category}</p>
-        <p class="price">${item.price ? item.price.trim() + ' €' : ''}</p>
-      `;
+      const content = document.createElement('div');
+      content.classList.add('card-content');
+      
+      const title = document.createElement('h3');
+      title.textContent = item.name;
+      content.appendChild(title);
+      
+      const subtitle = document.createElement('p');
+      subtitle.classList.add('subtitle');
+      subtitle.textContent = item.subtitle || '';
+      content.appendChild(subtitle);
+      
+      const category = document.createElement('p');
+      category.classList.add('category-label');
+      category.textContent = item.Category;
+      content.appendChild(category);
+      
+      const price = document.createElement('p');
+      price.classList.add('price');
+      price.textContent = item.price ? item.price.trim() + ' €' : '';
+      content.appendChild(price);
+      
+      card.appendChild(content);
 
       const actions = document.createElement('div');
       actions.classList.add('card-actions');
