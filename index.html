@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>¿Qué hay en el súper?</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+  <meta name="description" content="Explora productos de supermercado, compara precios y crea tu lista de compras personalizada">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="icon" type="image/png" href="img/image.png" />
   <link rel="stylesheet" href="style.css" />
   <!-- Agregar FontAwesome para íconos -->
@@ -21,7 +22,7 @@
         <input 
           type="text" 
           id="search-input" 
-          placeholder="Buscar productos..." 
+          placeholder="Buscar productos... (Ctrl+K)" 
           aria-label="Buscador de productos"
         />
         <button id="clear-search" class="clear-search" aria-label="Borrar búsqueda" title="Borrar búsqueda">
@@ -30,11 +31,35 @@
       </div>
     </div>
     <div class="header-right">
-      <button id="theme-toggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+      <!-- Nuevo botón para alternar vista -->
+      <button id="view-toggle" class="header-icon-button" aria-label="Cambiar vista" title="Cambiar vista">
+        <i class="fas fa-th-list"></i>
+      </button>
+
+      <!-- Botón para filtros -->
+      <button id="filter-toggle" class="header-icon-button" aria-label="Filtros" title="Filtros">
+        <i class="fas fa-filter"></i>
+      </button>
+
+      <!-- Botón para comparar productos -->
+      <button id="compare-products" class="header-icon-button" aria-label="Comparar productos" title="Comparar productos">
+        <i class="fas fa-balance-scale"></i>
+        <span class="compare-count"></span>
+      </button>
+
+      <!-- Botón para lista de compra -->
+      <button id="shopping-list-btn" class="header-icon-button" aria-label="Lista de compra" title="Lista de compra">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="shopping-list-count"></span>
+      </button>
+
+      <!-- Botón para cambiar tema -->
+      <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
         <i class="fas fa-moon"></i>
       </button>
+      
       <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
-        <i class="fab fa-github"></i> @Computingvictor
+        <i class="fab fa-github"></i> <span>@Computingvictor</span>
       </a>
     </div>
   </header>
@@ -44,10 +69,43 @@
       <i class="fas fa-bars"></i>
     </button>
 
+    <!-- Panel de filtros avanzados -->
+    <div id="filters-panel" class="filters-panel">
+      <div class="filters-header">
+        <h2><i class="fas fa-filter"></i> Filtros avanzados</h2>
+        <div class="filters-results">
+          <span id="filter-results-count">0</span> productos encontrados
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h3>Rango de precio</h3>
+        <div class="price-range-filter">
+          <div class="price-input">
+            <label for="price-filter-min">Min:</label>
+            <input type="number" id="price-filter-min" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="price-input">
+            <label for="price-filter-max">Max:</label>
+            <input type="number" id="price-filter-max" min="0" step="0.01" placeholder="∞" />
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button id="filter-apply" class="filter-button apply">
+          <i class="fas fa-check"></i> Aplicar filtros
+        </button>
+        <button id="filter-reset" class="filter-button reset">
+          <i class="fas fa-undo"></i> Resetear
+        </button>
+      </div>
+    </div>
+
     <aside id="sidebar">
       <h2>Categorías</h2>
       <button id="show-all" class="show-all-button">
-        <i class="fas fa-list"></i> Todos
+        <i class="fas fa-list"></i> Todos los productos
       </button>
       <ul id="category-list" role="tablist"></ul>
       
@@ -55,6 +113,14 @@
         <h2>Favoritos</h2>
         <div id="favorites-container">
           <p class="no-favorites">No hay favoritos guardados</p>
+        </div>
+      </div>
+
+      <!-- Sección de vistos recientemente -->
+      <div class="recently-viewed-section">
+        <h2>Vistos recientemente</h2>
+        <div id="recently-viewed-container">
+          <p class="no-recently-viewed">No hay productos vistos recientemente</p>
         </div>
       </div>
     </aside>
@@ -67,6 +133,7 @@
             <option value="name">Nombre</option>
             <option value="price_asc">Precio (menor a mayor)</option>
             <option value="price_desc">Precio (mayor a menor)</option>
+            <option value="popular">Popularidad</option>
           </select>
         </div>
         
@@ -77,7 +144,7 @@
             <option value="40">40</option>
             <option value="60">60</option>
             <option value="80">80</option>
-            <option value="100" selected>100</option>
+            <option value="100">100</option>
           </select>
         </div>
       </div>
@@ -106,10 +173,43 @@
     </main>
   </div>
 
+  <!-- Modal para visualizar información nutricional -->
   <div id="modal" class="modal" aria-hidden="true" role="dialog">
     <div class="modal-content-wrapper">
       <span id="modal-close" class="modal-close" aria-label="Cerrar">&times;</span>
       <img id="modal-img" class="modal-content" alt="Información nutricional">
+    </div>
+  </div>
+
+  <!-- Panel de comparación de productos -->
+  <div id="compare-panel" class="side-panel">
+    <div class="panel-header">
+      <h2><i class="fas fa-balance-scale"></i> Comparar productos</h2>
+      <button id="compare-panel-close" class="panel-close" aria-label="Cerrar panel">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="compare-list" class="panel-content">
+      <p class="no-compare">Selecciona productos para comparar (máximo 3)</p>
+    </div>
+  </div>
+
+  <!-- Panel de lista de compra -->
+  <div id="shopping-list-panel" class="side-panel">
+    <div class="panel-header">
+      <h2><i class="fas fa-shopping-cart"></i> Lista de la compra</h2>
+      <button id="shopping-list-close" class="panel-close" aria-label="Cerrar panel">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="shopping-list-container" class="panel-content">
+      <p class="no-shopping-list">Tu lista de la compra está vacía</p>
+    </div>
+    <div class="panel-footer">
+      <div id="shopping-list-total" class="shopping-list-total">Total: 0,00 €</div>
+      <button id="export-list-btn" class="export-list-btn">
+        <i class="fas fa-download"></i> Exportar lista
+      </button>
     </div>
   </div>
 
