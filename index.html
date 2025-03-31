@@ -31,6 +31,11 @@
       </div>
     </div>
     <div class="header-right">
+      <!-- Botón para comprobar actualizaciones -->
+      <button id="check-updates" class="header-icon-button" aria-label="Comprobar actualizaciones" title="Comprobar actualizaciones">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+
       <!-- Nuevo botón para alternar vista -->
       <button id="view-toggle" class="header-icon-button" aria-label="Cambiar vista" title="Cambiar vista">
         <i class="fas fa-th-list"></i>
@@ -109,6 +114,14 @@
       </button>
       <ul id="category-list" role="tablist"></ul>
       
+      <!-- Sección de Novedades -->
+      <div id="new-products-section" class="new-products-section">
+        <h2>Novedades</h2>
+        <div id="new-products-container">
+          <p class="no-new-products">No hay productos nuevos disponibles</p>
+        </div>
+      </div>
+      
       <div class="favorites-section">
         <h2>Favoritos</h2>
         <div id="favorites-container">
@@ -134,6 +147,7 @@
             <option value="price_asc">Precio (menor a mayor)</option>
             <option value="price_desc">Precio (mayor a menor)</option>
             <option value="popular">Popularidad</option>
+            <option value="newest">Más recientes</option>
           </select>
         </div>
         
