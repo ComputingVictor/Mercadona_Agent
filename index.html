@@ -57,6 +57,11 @@
       <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
         <i class="fas fa-moon"></i>
       </button>
+
+      <!-- Botón para asistente AI -->
+      <button id="ai-assistant-btn" class="header-icon-button" aria-label="Asistente AI" title="Asistente Inteligente">
+        <i class="fas fa-robot"></i>
+      </button>
       
       <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
         <i class="fab fa-github"></i> <span>@Computingvictor</span>
@@ -215,5 +220,38 @@
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="script.js"></script>
+
+
+  <!-- Asistente de productos LLM -->
+<div id="product-assistant" class="side-panel product-assistant">
+  <div class="panel-header">
+    <h2><i class="fas fa-robot"></i> Asistente Inteligente</h2>
+    <button id="assistant-close" class="panel-close" aria-label="Cerrar asistente">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="panel-content">
+    <div id="assistant-messages" class="assistant-messages">
+      <div class="assistant-message">
+        <div class="assistant-avatar"><i class="fas fa-robot"></i></div>
+        <div class="message-content">
+          ¡Hola! Soy tu asistente de productos. Puedo responder preguntas sobre ingredientes, nutrición, alternativas y más. ¿En qué puedo ayudarte?
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer assistant-input-container">
+    <input type="text" id="assistant-question" class="assistant-input" placeholder="Pregunta algo sobre este producto...">
+    <button id="assistant-send" class="assistant-send-btn">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Botón flotante para acceder al asistente -->
+<button id="assistant-toggle" class="assistant-toggle-btn">
+  <i class="fas fa-robot"></i>
+</button>
+
 </body>
 </html>

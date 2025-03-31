@@ -1587,3 +1587,178 @@ body.sidebar-open::after {
 .product-card:nth-child(3), .product-card-list:nth-child(3) { animation-delay: 0.15s; }
 .product-card:nth-child(4), .product-card-list:nth-child(4) { animation-delay: 0.2s; }
 .product-card:nth-child(5), .product-card-list:nth-child(5) { animation-delay: 0.25s; }
+
+
+/* Estilos para el asistente de productos */
+.product-assistant {
+  width: 350px;
+  right: -350px;
+  z-index: 101;
+}
+
+.product-assistant.active {
+  right: 0;
+}
+
+.assistant-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+}
+
+.assistant-message {
+  display: flex;
+  gap: 0.8rem;
+  max-width: 85%;
+}
+
+.assistant-message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.assistant-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.assistant-message.user .assistant-avatar {
+  background-color: var(--secondary-button-bg);
+}
+
+.message-content {
+  background-color: var(--aside-bg);
+  padding: 0.75rem;
+  border-radius: var(--rounded-md);
+  position: relative;
+  font-size: 0.95rem;
+}
+
+.assistant-message.user .message-content {
+  background-color: var(--brand-accent);
+  color: white;
+}
+
+.assistant-input-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.assistant-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--rounded-md);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+.assistant-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--rounded-md);
+  border: none;
+  background-color: var(--brand-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.assistant-send-btn:hover {
+  background-color: var(--brand-accent-hover);
+  transform: translateY(-2px);
+}
+
+.assistant-toggle-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 90;
+  transition: all 0.2s;
+}
+
+.assistant-toggle-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+.suggested-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.suggested-questions button {
+  background-color: var(--aside-bg);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--rounded-md);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggested-questions button:hover {
+  background-color: var(--active-category-bg);
+  transform: translateY(-1px);
+}
+
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--tertiary-text);
+  animation: loadingDot 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loadingDot {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+.product-card .ai-button, .product-card-list .ai-button {
+  background-color: #7c3aed;
+  color: white;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.product-card .ai-button:hover, .product-card-list .ai-button:hover {
+  background-color: #6d28d9;
+}
