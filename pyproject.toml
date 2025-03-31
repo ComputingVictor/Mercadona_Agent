@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "backoff>=2.2.1",
     "beautifulsoup4>=4.12.3",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.0",
@@ -14,6 +15,7 @@ dependencies = [
     "polars>=1.19.0",
     "pyarrow>=18.1.0",
     "selenium>=4.27.1",
+    "tqdm>=4.67.1",
     "webdriver-manager>=4.0.2",
     "wordcloud>=1.9.4",
 ]
