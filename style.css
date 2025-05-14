@@ -1587,3 +1587,40 @@ body.sidebar-open::after {
 .product-card:nth-child(3), .product-card-list:nth-child(3) { animation-delay: 0.15s; }
 .product-card:nth-child(4), .product-card-list:nth-child(4) { animation-delay: 0.2s; }
 .product-card:nth-child(5), .product-card-list:nth-child(5) { animation-delay: 0.25s; }
+
+
+/* Ajustes para vista móvil */
+@media (max-width: 768px) {
+  body, html {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px; /* espacio para el input */
+  }
+
+  .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 10px;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+  }
+
+  .input-container input[type="text"] {
+    width: 80%;
+    font-size: 16px;
+  }
+
+  .input-container button {
+    font-size: 16px;
+  }
+}
