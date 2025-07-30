@@ -1,14 +1,7 @@
-import { Database } from './database.js';
-import { authManager } from './auth.js';
-
-document.addEventListener('DOMContentLoaded', async function () {
-  // Initialize authentication
-  await authManager.init();
-  
-  // Setup auth UI
-  setupAuthUI();
+document.addEventListener('DOMContentLoaded', function () {
   // DOM elements
   const searchInput = document.getElementById('search-input');
+  const searchSuggestions = document.getElementById('search-suggestions');
   const clearSearchBtn = document.getElementById('clear-search');
   const categoryList = document.getElementById('category-list');
   const showAllBtn = document.getElementById('show-all');
@@ -50,6 +43,11 @@ document.addEventListener('DOMContentLoaded', async function () {
   const filterApplyBtn = document.getElementById('filter-apply');
   const filterResetBtn = document.getElementById('filter-reset');
 
+  // Mobile elements
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+
   // State
   let productsData = [];
   let currentProducts = [];
@@ -63,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   let currentFilters = {
     price: { min: 0, max: Infinity },
     categories: [],
-    nutritional: {} // Para filtros nutricionales futuros
+    nutritional: {}
   };
 
   // Set initial values
@@ -98,7 +96,223 @@ document.addEventListener('DOMContentLoaded', async function () {
     return amount.toFixed(2).replace('.', ',') + ' €';
   }
 
-  // Render categories
+  // =================================================
+  // MEJORAS DEL BUSCADOR
+  // =================================================
+
+  let searchTimeout;
+  let allProductNames = [];
+
+  function initializeSearch() {
+    // Crear lista de nombres de productos únicos para sugerencias
+    allProductNames = [...new Set(productsData.map(p => p.name.toLowerCase()))];
+    
+    // Añadir categorías también
+    const categories = [...new Set(productsData.map(p => p.Category))];
+    allProductNames = [...allProductNames, ...categories.map(c => c.toLowerCase())];
+  }
+
+  function showSearchSuggestions(query) {
+    if (!query || query.length < 2) {
+      hideSearchSuggestions();
+      return;
+    }
+
+    const suggestions = getSearchSuggestions(query);
+    
+    if (suggestions.length === 0) {
+      hideSearchSuggestions();
+      return;
+    }
+
+    searchSuggestions.innerHTML = '';
+    
+    suggestions.slice(0, 5).forEach(suggestion => {
+      const suggestionEl = document.createElement('div');
+      suggestionEl.classList.add('search-suggestion');
+      
+      const icon = suggestion.type === 'category' ? 'fa-tags' : 'fa-search';
+      
+      suggestionEl.innerHTML = `
+        <i class="fas ${icon} search-suggestion-icon"></i>
+        <span class="search-suggestion-text">${suggestion.text}</span>
+        ${suggestion.category ? `<span class="search-suggestion-category">${suggestion.category}</span>` : ''}
+      `;
+      
+      suggestionEl.addEventListener('click', () => {
+        searchInput.value = suggestion.text;
+        hideSearchSuggestions();
+        filterBySearch(suggestion.text);
+      });
+      
+      searchSuggestions.appendChild(suggestionEl);
+    });
+    
+    searchSuggestions.classList.add('show');
+  }
+
+  function hideSearchSuggestions() {
+    searchSuggestions.classList.remove('show');
+  }
+
+  function getSearchSuggestions(query) {
+    const cleanQuery = removeDiacritics(query.toLowerCase());
+    const suggestions = [];
+
+    // Buscar productos que coincidan
+    productsData.forEach(product => {
+      const productName = removeDiacritics(product.name.toLowerCase());
+      if (productName.includes(cleanQuery)) {
+        suggestions.push({
+          text: product.name,
+          type: 'product',
+          category: product.Category
+        });
+      }
+    });
+
+    // Buscar categorías que coincidan
+    const categories = [...new Set(productsData.map(p => p.Category))];
+    categories.forEach(category => {
+      const categoryName = removeDiacritics(category.toLowerCase());
+      if (categoryName.includes(cleanQuery)) {
+        suggestions.push({
+          text: category,
+          type: 'category'
+        });
+      }
+    });
+
+    // Remover duplicados y ordenar por relevancia
+    const uniqueSuggestions = suggestions.filter((item, index, self) => 
+      index === self.findIndex(t => t.text === item.text)
+    );
+
+    return uniqueSuggestions.sort((a, b) => {
+      const aStarts = removeDiacritics(a.text.toLowerCase()).startsWith(cleanQuery);
+      const bStarts = removeDiacritics(b.text.toLowerCase()).startsWith(cleanQuery);
+      
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return a.text.length - b.text.length;
+    });
+  }
+
+  // =================================================
+  // NAVEGACIÓN MÓVIL
+  // =================================================
+
+  function initMobileNavigation() {
+    // Menú móvil
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenuOverlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      });
+    }
+
+    if (mobileMenuClose) {
+      mobileMenuClose.addEventListener('click', closeMobileMenu);
+    }
+
+    if (mobileMenuOverlay) {
+      mobileMenuOverlay.addEventListener('click', (e) => {
+        if (e.target === mobileMenuOverlay) {
+          closeMobileMenu();
+        }
+      });
+    }
+
+    // Enlaces del menú móvil
+    document.getElementById('mobile-view-toggle')?.addEventListener('click', () => {
+      toggleViewMode();
+      closeMobileMenu();
+    });
+
+    document.getElementById('mobile-compare')?.addEventListener('click', () => {
+      if (compareBtn) compareBtn.click();
+      closeMobileMenu();
+    });
+
+    document.getElementById('mobile-shopping-list')?.addEventListener('click', () => {
+      if (shoppingListBtn) shoppingListBtn.click();
+      closeMobileMenu();
+    });
+
+    document.getElementById('mobile-theme')?.addEventListener('click', () => {
+      if (themeToggle) themeToggle.click();
+      closeMobileMenu();
+    });
+
+    document.getElementById('mobile-filters')?.addEventListener('click', () => {
+      if (filterToggle) filterToggle.click();
+      closeMobileMenu();
+    });
+
+    // Cerrar menú con tecla Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeMobileMenu();
+        hideSearchSuggestions();
+      }
+    });
+
+    // Sidebar móvil
+    if (mobileMenuToggle) {
+      mobileMenuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+        document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : '';
+      });
+    }
+
+    // Cerrar sidebar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+        if (!sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+          sidebar.classList.remove('mobile-open');
+          document.body.style.overflow = '';
+        }
+      }
+    });
+  }
+
+  function closeMobileMenu() {
+    mobileMenuOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  // =================================================
+  // MEJORAS TÁCTILES
+  // =================================================
+
+  function enhanceTouchExperience() {
+    // Mejorar imágenes lazy loading
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    images.forEach(img => {
+      img.addEventListener('load', () => {
+        img.classList.add('loaded');
+      });
+    });
+
+    // Feedback táctil para botones
+    const touchElements = document.querySelectorAll('.product-card, button, .mobile-menu-item');
+    touchElements.forEach(element => {
+      element.addEventListener('touchstart', function() {
+        this.style.transform = 'scale(0.98)';
+      }, { passive: true });
+
+      element.addEventListener('touchend', function() {
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 150);
+      }, { passive: true });
+    });
+  }
+
+  // =================================================
+  // FUNCIONES ORIGINALES (simplificadas)
+  // =================================================
+
   function renderCategories(categories) {
     categoryList.innerHTML = '';
     categories.forEach(category => {
@@ -111,35 +325,32 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.querySelectorAll('#category-list li').forEach(el => el.classList.remove('active-category'));
         li.classList.add('active-category');
         currentPage = 1;
-        
-        // Update filters for category
         currentFilters.categories = [category];
-        
-        // Apply all current filters
         applyFilters();
+        
+        // Cerrar sidebar en móvil
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('mobile-open');
+          document.body.style.overflow = '';
+        }
       });
       categoryList.appendChild(li);
     });
   }
 
-  // Apply all current filters
   function applyFilters() {
-    // Start with all products
     let filtered = [...productsData];
     
-    // Apply category filter
     if (currentFilters.categories.length > 0) {
       filtered = filtered.filter(p => currentFilters.categories.includes(p.Category));
     }
     
-    // Apply price filter
     filtered = filtered.filter(p => {
       const price = formatPrice(p.price);
       if (price === null) return false;
       return price >= currentFilters.price.min && price <= currentFilters.price.max;
     });
     
-    // Apply search filter if there's a search term
     if (searchInput.value.trim()) {
       const cleaned = removeDiacritics(searchInput.value.toLowerCase());
       const tokens = cleaned.split(/\s+/).filter(Boolean);
@@ -152,16 +363,13 @@ document.addEventListener('DOMContentLoaded', async function () {
       }
     }
     
-    // Update current products and render
     currentProducts = filtered;
     currentPage = 1;
     sortAndRender();
     
-    // Update counters
     document.getElementById('filter-results-count').textContent = filtered.length;
   }
 
-  // Sort + render
   function sortAndRender() {
     const sortValue = sortSelect.value;
     
@@ -180,8 +388,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         return priceB - priceA;
       });
     } else if (sortValue === 'popular') {
-      // Sorting by "popularity" (could be based on view count in a real app)
-      // For now, we'll simulate with a combination of favorites and recently viewed
       currentProducts.sort((a, b) => {
         const scoreA = (favorites.includes(a.name) ? 10 : 0) + (recentlyViewed.includes(a.name) ? 5 : 0);
         const scoreB = (favorites.includes(b.name) ? 10 : 0) + (recentlyViewed.includes(b.name) ? 5 : 0);
@@ -215,71 +421,25 @@ document.addEventListener('DOMContentLoaded', async function () {
       const card = document.createElement('div');
       card.classList.add(currentView === 'grid' ? 'product-card' : 'product-card-list');
 
-      // Product image and hover zoom
       const imgContainer = document.createElement('div');
       imgContainer.classList.add('product-image-container');
       
       const img = document.createElement('img');
       img.src = item.main_image_url;
       img.alt = item.name;
-      img.loading = "lazy"; // Lazy loading for better performance
+      img.loading = "lazy";
       img.onerror = () => { img.src = 'img/placeholder.png'; };
       imgContainer.appendChild(img);
       
-      // Quick action buttons overlay
-      const quickActions = document.createElement('div');
-      quickActions.classList.add('quick-actions');
-      
-      // Quick view button
-      if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
-        const quickViewBtn = document.createElement('button');
-        quickViewBtn.classList.add('quick-action-btn');
-        quickViewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        quickViewBtn.setAttribute('title', 'Ver macros');
-        quickViewBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          openModal(item.secondary_image_url);
-        });
-        quickActions.appendChild(quickViewBtn);
-      }
-      
-      // Quick add to shopping list
-      const quickAddBtn = document.createElement('button');
-      quickAddBtn.classList.add('quick-action-btn');
-      quickAddBtn.innerHTML = '<i class="fas fa-cart-plus"></i>';
-      quickAddBtn.setAttribute('title', 'Añadir a la lista');
-      quickAddBtn.addEventListener('click', async e => {
-        e.stopPropagation();
-        await addToShoppingList(item.name, item);
-        showToast('Producto añadido a la lista');
-      });
-      quickActions.appendChild(quickAddBtn);
-      
-      // Quick add to compare
-      const quickCompareBtn = document.createElement('button');
-      quickCompareBtn.classList.add('quick-action-btn');
-      quickCompareBtn.innerHTML = '<i class="fas fa-balance-scale"></i>';
-      quickCompareBtn.setAttribute('title', 'Comparar producto');
-      quickCompareBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        toggleCompareProduct(item);
-      });
-      quickActions.appendChild(quickCompareBtn);
-      
-      imgContainer.appendChild(quickActions);
       card.appendChild(imgContainer);
 
-      // Product info
       const cardContent = document.createElement('div');
       cardContent.classList.add('product-info');
       
-      // Name with link effect
       const nameEl = document.createElement('h3');
       nameEl.textContent = item.name;
-      nameEl.addEventListener('click', async () => {
-        await addToRecentlyViewed(item.name);
-        // If we had a product details page, we would navigate here
-        // For now, open nutrition info if available
+      nameEl.addEventListener('click', () => {
+        addToRecentlyViewed(item.name);
         if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
           openModal(item.secondary_image_url);
         }
@@ -298,7 +458,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       categoryEl.textContent = item.Category;
       cardContent.appendChild(categoryEl);
       
-      // Price with optional discount display
       const priceContainer = document.createElement('div');
       priceContainer.classList.add('price-container');
       
@@ -306,23 +465,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         const priceEl = document.createElement('p');
         priceEl.classList.add('price');
         priceEl.textContent = item.price.trim() + ' €';
-        
-        // Simulate occasional discounts for UI demonstration
-        if (item.name.length % 7 === 0) { // Using name length as a simple random factor
-          priceEl.classList.add('discounted');
-          const oldPrice = formatPrice(item.price) * 1.2;
-          const oldPriceEl = document.createElement('span');
-          oldPriceEl.classList.add('old-price');
-          oldPriceEl.textContent = formatCurrency(oldPrice);
-          priceContainer.appendChild(oldPriceEl);
-        }
-        
         priceContainer.appendChild(priceEl);
       }
       
       cardContent.appendChild(priceContainer);
       
-      // Actions (buttons)
       const actions = document.createElement('div');
       actions.classList.add('card-actions');
 
@@ -330,10 +477,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         const btn = document.createElement('button');
         btn.classList.add('view-macros-button');
         btn.innerHTML = '<i class="fas fa-chart-pie"></i> Ver macros';
-        btn.addEventListener('click', async e => {
+        btn.addEventListener('click', e => {
           e.stopPropagation();
           openModal(item.secondary_image_url);
-          await addToRecentlyViewed(item.name);
+          addToRecentlyViewed(item.name);
         });
         actions.appendChild(btn);
       }
@@ -348,10 +495,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       cardContent.appendChild(actions);
       card.appendChild(cardContent);
       
-      // Make entire card clickable for better UX
-      card.addEventListener('click', async () => {
-        await addToRecentlyViewed(item.name);
-        // If secondary image exists, show it
+      card.addEventListener('click', () => {
+        addToRecentlyViewed(item.name);
         if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
           openModal(item.secondary_image_url);
         }
@@ -363,40 +508,36 @@ document.addEventListener('DOMContentLoaded', async function () {
     updatePaginationInfo(currentPage, totalPages);
     disablePagination(false);
     
-    // Disable prev/next buttons when at limits
     prevPageBtnTop.disabled = prevPageBtnBottom.disabled = currentPage === 1;
     nextPageBtnTop.disabled = nextPageBtnBottom.disabled = currentPage === totalPages;
+    
+    // Mejorar experiencia táctil después de renderizar
+    enhanceTouchExperience();
   }
 
   function filterBySearch(value) {
-    // Update search filter and apply all filters
     searchInput.value = value;
     applyFilters();
+    hideSearchSuggestions();
   }
 
   function resetFilters() {
-    // Reset all filters to default values
     currentFilters = {
       price: { min: 0, max: Infinity },
       categories: [],
       nutritional: {}
     };
     
-    // Reset UI elements
     searchInput.value = '';
     if (priceFilterMin) priceFilterMin.value = '';
     if (priceFilterMax) priceFilterMax.value = '';
     document.querySelectorAll('#category-list li').forEach(el => el.classList.remove('active-category'));
     
-    // Reset products and render
     currentProducts = [...productsData];
     currentPage = 1;
     sortAndRender();
     
-    // Update filter result count
     document.getElementById('filter-results-count').textContent = productsData.length;
-    
-    // Show toast notification
     showToast('Filtros restablecidos');
   }
 
@@ -407,193 +548,24 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.body.classList.add('modal-open');
   }
 
-  // Auth UI Setup
-  function setupAuthUI() {
-    const authSection = document.getElementById('auth-section');
-    const guestBanner = document.getElementById('guest-banner');
-    const guestBannerLogin = document.getElementById('guest-banner-login');
-    const guestBannerClose = document.getElementById('guest-banner-close');
-    
-    // Show guest banner if dismissed flag is not set
-    const guestBannerDismissed = localStorage.getItem('guestBannerDismissed');
-    if (!guestBannerDismissed && !authManager.isLoggedIn()) {
-      guestBanner.classList.add('show');
-    }
-    
-    // Guest banner event listeners
-    guestBannerLogin.addEventListener('click', () => {
-      authManager.showAuthModal();
-    });
-    
-    guestBannerClose.addEventListener('click', () => {
-      guestBanner.classList.remove('show');
-      localStorage.setItem('guestBannerDismissed', 'true');
-    });
-    
-    // Listen to auth state changes
-    authManager.onAuthStateChange((user) => {
-      updateAuthUI(user);
-    });
-    
-    // Initial auth UI update
-    updateAuthUI(authManager.getCurrentUser());
-  }
-  
-  function updateAuthUI(user) {
-    const authSection = document.getElementById('auth-section');
-    const guestBanner = document.getElementById('guest-banner');
-    
-    if (user) {
-      // User is logged in
-      guestBanner.classList.remove('show');
-      
-      const userEmail = user.email || '';
-      const initials = userEmail.split('@')[0].slice(0, 2).toUpperCase();
-      
-      authSection.innerHTML = `
-        <div class="user-profile user-dropdown">
-          <div class="auth-status" id="auth-status">
-            <div class="user-avatar">${initials}</div>
-            <div class="user-email">${userEmail}</div>
-          </div>
-          <div class="user-dropdown-menu" id="user-dropdown-menu">
-            <button class="user-dropdown-item" id="user-preferences">
-              <i class="fas fa-cog"></i> Preferencias
-            </button>
-            <button class="user-dropdown-item" id="sync-data">
-              <i class="fas fa-sync-alt"></i> Sincronizar datos
-            </button>
-            <button class="user-dropdown-item danger" id="sign-out">
-              <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-            </button>
-          </div>
-        </div>
-      `;
-      
-      setupUserDropdown();
-    } else {
-      // User is not logged in
-      const guestBannerDismissed = localStorage.getItem('guestBannerDismissed');
-      if (!guestBannerDismissed) {
-        guestBanner.classList.add('show');
-      }
-      
-      authSection.innerHTML = `
-        <button class="login-button" id="login-button">
-          <i class="fas fa-sign-in-alt"></i>
-          <span>Iniciar Sesión</span>
-        </button>
-      `;
-      
-      document.getElementById('login-button').addEventListener('click', () => {
-        authManager.showAuthModal();
-      });
-    }
-  }
-  
-  function setupUserDropdown() {
-    const authStatus = document.getElementById('auth-status');
-    const dropdownMenu = document.getElementById('user-dropdown-menu');
-    const signOutBtn = document.getElementById('sign-out');
-    const syncDataBtn = document.getElementById('sync-data');
-    
-    // Toggle dropdown
-    authStatus.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdownMenu.classList.toggle('show');
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-      dropdownMenu.classList.remove('show');
-    });
-    
-    // Sign out
-    signOutBtn.addEventListener('click', async () => {
-      await authManager.signOut();
-      dropdownMenu.classList.remove('show');
-    });
-    
-    // Sync data
-    syncDataBtn.addEventListener('click', async () => {
-      await syncUserData();
-      dropdownMenu.classList.remove('show');
-    });
-  }
-  
-  async function syncUserData() {
-    const user = authManager.getCurrentUser();
-    if (!user) return;
-    
-    showSyncStatus('Sincronizando datos...', 'loading');
-    
-    try {
-      await Database.syncLocalStorageToDatabase(user.id);
-      await authManager.loadUserDataFromDatabase();
-      showSyncStatus('Datos sincronizados correctamente', 'success');
-    } catch (error) {
-      console.error('Error syncing data:', error);
-      showSyncStatus('Error al sincronizar datos', 'error');
-    }
-  }
-  
-  function showSyncStatus(message, type) {
-    const syncStatus = document.getElementById('sync-status');
-    const syncStatusText = document.getElementById('sync-status-text');
-    
-    syncStatusText.textContent = message;
-    syncStatus.className = `sync-status show ${type}`;
-    
-    setTimeout(() => {
-      syncStatus.classList.remove('show');
-    }, 3000);
-  }
-
-  async function toggleFavorite(productName) {
-    const user = authManager.getCurrentUser();
-    
+  function toggleFavorite(productName) {
     if (favorites.includes(productName)) {
       favorites = favorites.filter(f => f !== productName);
       showToast('Eliminado de favoritos');
-      
-      // Remove from database if user is logged in
-      if (user) {
-        await Database.removeFavorite(user.id, productName);
-      }
     } else {
       favorites.push(productName);
       showToast('Añadido a favoritos');
-      
-      // Add to database if user is logged in
-      if (user) {
-        await Database.addFavorite(user.id, productName);
-      }
     }
-    
     localStorage.setItem('favorites', JSON.stringify(favorites));
     renderFavorites();
-    sortAndRender(); // Re-render to update favorite buttons
+    sortAndRender();
   }
 
-  async function addToRecentlyViewed(productName) {
-    const user = authManager.getCurrentUser();
-    
-    // Remove if already exists to move to front
+  function addToRecentlyViewed(productName) {
     recentlyViewed = recentlyViewed.filter(name => name !== productName);
-    
-    // Add to front of array
     recentlyViewed.unshift(productName);
-    
-    // Limit to 5 items
     recentlyViewed = recentlyViewed.slice(0, 5);
-    
     localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
-    
-    // Add to database if user is logged in
-    if (user) {
-      await Database.addRecentlyViewed(user.id, productName);
-    }
-    
     renderRecentlyViewed();
   }
 
@@ -611,7 +583,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       const div = document.createElement('div');
       div.classList.add('favorite-item');
       
-      // Add product image
       const img = document.createElement('img');
       img.src = product.main_image_url;
       img.alt = product.name;
@@ -619,7 +590,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       img.onerror = () => { img.src = 'img/placeholder.png'; };
       div.appendChild(img);
       
-      // Add product info
       const info = document.createElement('div');
       info.classList.add('favorite-item-info');
       info.innerHTML = `
@@ -628,22 +598,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       `;
       div.appendChild(info);
       
-      // Add action buttons
       const actions = document.createElement('div');
       actions.classList.add('favorite-item-actions');
       
-      // Add to shopping list button
-      const addToListBtn = document.createElement('button');
-      addToListBtn.classList.add('add-to-list-btn');
-      addToListBtn.innerHTML = '<i class="fas fa-cart-plus"></i>';
-      addToListBtn.setAttribute('title', 'Añadir a la lista');
-      addToListBtn.addEventListener('click', async () => {
-        await addToShoppingList(product.name, product);
-        showToast('Producto añadido a la lista');
-      });
-      actions.appendChild(addToListBtn);
-      
-      // Remove from favorites button
       const removeBtn = document.createElement('button');
       removeBtn.classList.add('remove-favorite');
       removeBtn.innerHTML = '<i class="fas fa-times"></i>';
@@ -653,10 +610,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       
       div.appendChild(actions);
       
-      // Make whole item clickable
-      div.addEventListener('click', async (e) => {
+      div.addEventListener('click', (e) => {
         if (e.target === div || e.target.tagName === 'IMG' || e.target.classList.contains('favorite-item-name')) {
-          await addToRecentlyViewed(product.name);
+          addToRecentlyViewed(product.name);
           if (product.secondary_image_url && product.secondary_image_url.trim() !== '') {
             openModal(product.secondary_image_url);
           }
@@ -683,7 +639,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       const div = document.createElement('div');
       div.classList.add('recently-viewed-item');
       
-      // Add product image
       const img = document.createElement('img');
       img.src = product.main_image_url;
       img.alt = product.name;
@@ -691,7 +646,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       img.onerror = () => { img.src = 'img/placeholder.png'; };
       div.appendChild(img);
       
-      // Add product info
       const info = document.createElement('div');
       info.classList.add('recently-viewed-item-info');
       info.innerHTML = `
@@ -700,9 +654,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       `;
       div.appendChild(info);
       
-      // Make item clickable
-      div.addEventListener('click', async () => {
-        await addToRecentlyViewed(product.name); // Move to top of list
+      div.addEventListener('click', () => {
+        addToRecentlyViewed(product.name);
         if (product.secondary_image_url && product.secondary_image_url.trim() !== '') {
           openModal(product.secondary_image_url);
         }
@@ -712,402 +665,21 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  function toggleCompareProduct(product) {
-    const index = compareProducts.findIndex(p => p.name === product.name);
-    
-    if (index !== -1) {
-      // Remove from compare
-      compareProducts.splice(index, 1);
-      showToast('Producto eliminado de la comparación');
-    } else {
-      // Add to compare (limit to 3)
-      if (compareProducts.length >= 3) {
-        showToast('Máximo 3 productos para comparar', 'warning');
-        return;
-      }
-      
-      compareProducts.push(product);
-      showToast('Producto añadido a la comparación');
-    }
-    
-    updateCompareButton();
-    
-    // If compare panel is open, update it
-    if (comparePanel.classList.contains('active')) {
-      renderCompareProducts();
-    }
-  }
-
-  function updateCompareButton() {
-    if (compareProducts.length > 0) {
-      compareBtn.classList.add('active');
-      compareBtn.querySelector('.compare-count').textContent = compareProducts.length;
-    } else {
-      compareBtn.classList.remove('active');
-      compareBtn.querySelector('.compare-count').textContent = '';
-    }
-  }
-
-  function renderCompareProducts() {
-    compareList.innerHTML = '';
-    
-    if (compareProducts.length === 0) {
-      compareList.innerHTML = '<p class="no-compare">Selecciona productos para comparar (máximo 3)</p>';
-      return;
-    }
-    
-    // Create table for comparison
-    const table = document.createElement('table');
-    table.classList.add('compare-table');
-    
-    // Headers row
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    // Empty cell for property names
-    headerRow.appendChild(document.createElement('th'));
-    
-    // Product name headers with images
-    compareProducts.forEach(product => {
-      const th = document.createElement('th');
-      
-      // Product image
-      const img = document.createElement('img');
-      img.src = product.main_image_url;
-      img.alt = product.name;
-      img.onerror = () => { img.src = 'img/placeholder.png'; };
-      th.appendChild(img);
-      
-      // Product name
-      const name = document.createElement('div');
-      name.textContent = product.name;
-      name.classList.add('compare-product-name');
-      th.appendChild(name);
-      
-      // Remove button
-      const removeBtn = document.createElement('button');
-      removeBtn.classList.add('compare-remove-btn');
-      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-      removeBtn.addEventListener('click', () => {
-        toggleCompareProduct(product);
-      });
-      th.appendChild(removeBtn);
-      
-      headerRow.appendChild(th);
-    });
-    
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    
-    // Table body with product properties
-    const tbody = document.createElement('tbody');
-    
-    // Define properties to compare
-    const propertiesToCompare = [
-      { name: 'Categoría', key: 'Category' },
-      { name: 'Precio', key: 'price' },
-      { name: 'Subtítulo', key: 'subtitle' }
-      // Add more properties as needed
-    ];
-    
-    propertiesToCompare.forEach(prop => {
-      const row = document.createElement('tr');
-      
-      // Property name
-      const propCell = document.createElement('td');
-      propCell.textContent = prop.name;
-      propCell.classList.add('compare-property');
-      row.appendChild(propCell);
-      
-      // Product values
-      compareProducts.forEach(product => {
-        const valueCell = document.createElement('td');
-        valueCell.textContent = product[prop.key] || '–';
-        row.appendChild(valueCell);
-      });
-      
-      tbody.appendChild(row);
-    });
-    
-    // Add nutrition info row if available
-    const nutritionRow = document.createElement('tr');
-    
-    const nutritionLabelCell = document.createElement('td');
-    nutritionLabelCell.textContent = 'Información nutricional';
-    nutritionLabelCell.classList.add('compare-property');
-    nutritionRow.appendChild(nutritionLabelCell);
-    
-    compareProducts.forEach(product => {
-      const nutritionCell = document.createElement('td');
-      
-      if (product.secondary_image_url && product.secondary_image_url.trim() !== '') {
-        const viewBtn = document.createElement('button');
-        viewBtn.classList.add('view-nutrition-btn');
-        viewBtn.innerHTML = '<i class="fas fa-chart-pie"></i> Ver macros';
-        viewBtn.addEventListener('click', () => {
-          openModal(product.secondary_image_url);
-        });
-        nutritionCell.appendChild(viewBtn);
-      } else {
-        nutritionCell.textContent = 'No disponible';
-      }
-      
-      nutritionRow.appendChild(nutritionCell);
-    });
-    
-    tbody.appendChild(nutritionRow);
-    table.appendChild(tbody);
-    
-    compareList.appendChild(table);
-  }
-
-  async function addToShoppingList(productName, product) {
-    const user = authManager.getCurrentUser();
-    
-    // Create shopping list structure if it doesn't exist
-    if (!shoppingList[productName]) {
-      shoppingList[productName] = {
-        product: product,
-        quantity: 0
-      };
-    }
-    
-    // Increment quantity
-    shoppingList[productName].quantity += 1;
-    
-    // Save to localStorage
-    localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
-    
-    // Add to database if user is logged in
-    if (user) {
-      await Database.addToShoppingList(user.id, productName, product, 1);
-    }
-    
-    // Update UI if panel is open
-    if (shoppingListPanel.classList.contains('active')) {
-      renderShoppingList();
-    }
-    
-    // Update shopping list count
-    updateShoppingListCount();
-  }
-
-  async function removeFromShoppingList(productName) {
-    const user = authManager.getCurrentUser();
-    
-    delete shoppingList[productName];
-    localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
-    
-    // Remove from database if user is logged in
-    if (user) {
-      await Database.removeFromShoppingList(user.id, productName);
-    }
-    
-    renderShoppingList();
-    updateShoppingListCount();
-  }
-
-  function updateShoppingListCount() {
-    const count = Object.keys(shoppingList).length;
-    const countEl = document.querySelector('.shopping-list-count');
-    
-    if (countEl) {
-      if (count > 0) {
-        countEl.textContent = count;
-        countEl.classList.add('active');
-      } else {
-        countEl.textContent = '';
-        countEl.classList.remove('active');
-      }
-    }
-  }
-
-  function renderShoppingList() {
-    shoppingListContainer.innerHTML = '';
-    
-    const items = Object.entries(shoppingList);
-    
-    if (items.length === 0) {
-      shoppingListContainer.innerHTML = '<p class="no-shopping-list">Tu lista de la compra está vacía</p>';
-      shoppingListTotal.textContent = 'Total: 0,00 €';
-      return;
-    }
-    
-    let total = 0;
-    
-    items.forEach(([name, item]) => {
-      const { product, quantity } = item;
-      
-      const listItem = document.createElement('div');
-      listItem.classList.add('shopping-list-item');
-      
-      // Product image
-      const img = document.createElement('img');
-      img.src = product.main_image_url;
-      img.alt = product.name;
-      img.classList.add('shopping-list-item-image');
-      img.onerror = () => { img.src = 'img/placeholder.png'; };
-      listItem.appendChild(img);
-      
-      // Product info
-      const info = document.createElement('div');
-      info.classList.add('shopping-list-item-info');
-      
-      const nameEl = document.createElement('div');
-      nameEl.textContent = product.name;
-      nameEl.classList.add('shopping-list-item-name');
-      info.appendChild(nameEl);
-      
-      const priceEl = document.createElement('div');
-      priceEl.textContent = product.price || 'Precio no disponible';
-      priceEl.classList.add('shopping-list-item-price');
-      info.appendChild(priceEl);
-      
-      listItem.appendChild(info);
-      
-      // Quantity controls
-      const quantityControls = document.createElement('div');
-      quantityControls.classList.add('quantity-controls');
-      
-      const decreaseBtn = document.createElement('button');
-      decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
-      decreaseBtn.addEventListener('click', async () => {
-        const user = authManager.getCurrentUser();
-        
-        if (quantity > 1) {
-          shoppingList[name].quantity -= 1;
-          localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
-          
-          // Update in database if user is logged in
-          if (user) {
-            await Database.updateShoppingListQuantity(user.id, name, shoppingList[name].quantity);
-          }
-          
-          renderShoppingList();
-        } else {
-          await removeFromShoppingList(name);
-        }
-      });
-      quantityControls.appendChild(decreaseBtn);
-      
-      const quantityEl = document.createElement('span');
-      quantityEl.textContent = quantity;
-      quantityEl.classList.add('quantity-value');
-      quantityControls.appendChild(quantityEl);
-      
-      const increaseBtn = document.createElement('button');
-      increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
-      increaseBtn.addEventListener('click', async () => {
-        const user = authManager.getCurrentUser();
-        
-        shoppingList[name].quantity += 1;
-        localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
-        
-        // Update in database if user is logged in
-        if (user) {
-          await Database.updateShoppingListQuantity(user.id, name, shoppingList[name].quantity);
-        }
-        
-        renderShoppingList();
-      });
-      quantityControls.appendChild(increaseBtn);
-      
-      listItem.appendChild(quantityControls);
-      
-      // Subtotal and remove button
-      const actions = document.createElement('div');
-      actions.classList.add('shopping-list-item-actions');
-      
-      // Calculate subtotal
-      let subtotal = 0;
-      if (product.price) {
-        const price = formatPrice(product.price);
-        if (price !== null) {
-          subtotal = price * quantity;
-          total += subtotal;
-          
-          const subtotalEl = document.createElement('div');
-          subtotalEl.textContent = formatCurrency(subtotal);
-          subtotalEl.classList.add('shopping-list-item-subtotal');
-          actions.appendChild(subtotalEl);
-        }
-      }
-      
-      const removeBtn = document.createElement('button');
-      removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-      removeBtn.classList.add('remove-from-list');
-      removeBtn.addEventListener('click', async () => await removeFromShoppingList(name));
-      actions.appendChild(removeBtn);
-      
-      listItem.appendChild(actions);
-      
-      shoppingListContainer.appendChild(listItem);
-    });
-    
-    // Update total
-    shoppingListTotal.textContent = `Total: ${formatCurrency(total)}`;
-  }
-
-  function exportShoppingList() {
-    const items = Object.entries(shoppingList);
-    
-    if (items.length === 0) {
-      showToast('No hay productos en la lista de la compra', 'warning');
-      return;
-    }
-    
-    let csvContent = 'Producto,Cantidad,Precio Unitario,Subtotal\n';
-    
-    items.forEach(([name, item]) => {
-      const { product, quantity } = item;
-      const price = formatPrice(product.price) || 0;
-      const subtotal = price * quantity;
-      
-      csvContent += `"${product.name}",${quantity},"${product.price || 'N/A'}","${formatCurrency(subtotal)}"\n`;
-    });
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'lista_compra.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast('Lista de la compra exportada correctamente');
-  }
-
-  async function toggleViewMode() {
+  function toggleViewMode() {
     currentView = currentView === 'grid' ? 'list' : 'grid';
     localStorage.setItem('currentView', currentView);
     
-    // Toggle icon
-    viewToggle.querySelector('i').className = currentView === 'grid' ? 'fas fa-th-list' : 'fas fa-th-large';
+    if (viewToggle) {
+      viewToggle.querySelector('i').className = currentView === 'grid' ? 'fas fa-th-list' : 'fas fa-th-large';
+    }
     
-    // Toggle body class
     document.body.classList.remove('grid-view', 'list-view');
     document.body.classList.add(currentView + '-view');
     
-    // Re-render products
     sortAndRender();
-    
-    // Save to database if user is logged in
-    const user = authManager.getCurrentUser();
-    if (user) {
-      const preferences = {
-        theme: localStorage.getItem('theme') || 'light',
-        itemsPerPage: parseInt(localStorage.getItem('itemsPerPage') || '20'),
-        currentView: currentView
-      };
-      await Database.saveUserPreferences(user.id, preferences);
-    }
   }
 
   function showToast(message, type = 'success') {
-    // Create toast if it doesn't exist
     let toast = document.querySelector('.toast');
     if (!toast) {
       toast = document.createElement('div');
@@ -1115,29 +687,52 @@ document.addEventListener('DOMContentLoaded', async function () {
       document.body.appendChild(toast);
     }
     
-    // Set message and type
     toast.textContent = message;
-    toast.className = 'toast'; // Reset classes
+    toast.className = 'toast';
     toast.classList.add(type);
-    
-    // Show toast
     toast.classList.add('show');
     
-    // Hide after 3 seconds
     setTimeout(() => {
       toast.classList.remove('show');
     }, 3000);
   }
 
-  // Events
-  clearSearchBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    filterBySearch('');
+  // =================================================
+  // EVENT LISTENERS
+  // =================================================
+
+  // Búsqueda mejorada
+  searchInput.addEventListener('input', (e) => {
+    const value = e.target.value;
+    
+    // Mostrar/ocultar botón de limpiar
+    clearSearchBtn.classList.toggle('show', value.length > 0);
+    
+    // Debounced search
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      showSearchSuggestions(value);
+      filterBySearch(value);
+    }, 300);
   });
 
-  searchInput.addEventListener('input', () => {
-    clearSearchBtn.style.display = searchInput.value.length ? 'block' : 'none';
-    filterBySearch(searchInput.value);
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.length >= 2) {
+      showSearchSuggestions(searchInput.value);
+    }
+  });
+
+  searchInput.addEventListener('blur', () => {
+    // Delay para permitir clics en sugerencias
+    setTimeout(hideSearchSuggestions, 150);
+  });
+
+  clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearSearchBtn.classList.remove('show');
+    hideSearchSuggestions();
+    filterBySearch('');
+    searchInput.focus();
   });
 
   showAllBtn.addEventListener('click', () => {
@@ -1145,35 +740,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     resetFilters();
   });
 
-  itemsPerPageSelect.addEventListener('change', async () => {
+  itemsPerPageSelect.addEventListener('change', () => {
     itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
     localStorage.setItem('itemsPerPage', itemsPerPage.toString());
     currentPage = 1;
     sortAndRender();
-    
-    // Save to database if user is logged in
-    const user = authManager.getCurrentUser();
-    if (user) {
-      const preferences = {
-        theme: localStorage.getItem('theme') || 'light',
-        itemsPerPage: itemsPerPage,
-        currentView: localStorage.getItem('currentView') || 'grid'
-      };
-      await Database.saveUserPreferences(user.id, preferences);
-    }
   });
 
-  sortSelect.addEventListener('change', () => {
-    sortAndRender();
-  });
+  sortSelect.addEventListener('change', sortAndRender);
 
-  // Pagination handlers
+  // Paginación
   prevPageBtnTop.addEventListener('click', () => { currentPage--; sortAndRender(); });
   nextPageBtnTop.addEventListener('click', () => { currentPage++; sortAndRender(); });
   prevPageBtnBottom.addEventListener('click', () => { currentPage--; sortAndRender(); });
   nextPageBtnBottom.addEventListener('click', () => { currentPage++; sortAndRender(); });
 
-  // Modal handler
+  // Modal
   modalClose.addEventListener('click', () => {
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
@@ -1188,58 +770,49 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   });
 
-  // Theme toggle
-  themeToggle.addEventListener('click', async () => {
+  // Tema
+  themeToggle.addEventListener('click', () => {
     const html = document.documentElement;
     const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
     html.dataset.theme = newTheme;
     localStorage.setItem('theme', newTheme);
     
-    // Update icon
     themeToggle.innerHTML = newTheme === 'dark' ? 
       '<i class="fas fa-sun"></i>' : 
       '<i class="fas fa-moon"></i>';
-    
-    // Save to database if user is logged in
-    const user = authManager.getCurrentUser();
-    if (user) {
-      const preferences = {
-        theme: newTheme,
-        itemsPerPage: parseInt(localStorage.getItem('itemsPerPage') || '20'),
-        currentView: localStorage.getItem('currentView') || 'grid'
-      };
-      await Database.saveUserPreferences(user.id, preferences);
+
+    // Actualizar texto del menú móvil
+    const mobileThemeBtn = document.getElementById('mobile-theme');
+    if (mobileThemeBtn) {
+      mobileThemeBtn.innerHTML = `
+        <i class="fas fa-${newTheme === 'dark' ? 'sun' : 'moon'}"></i>
+        <span>Tema ${newTheme === 'dark' ? 'claro' : 'oscuro'}</span>
+      `;
     }
   });
 
-  // Mobile menu toggle
-  mobileMenuToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('active');
-    document.body.classList.toggle('sidebar-open');
-  });
+  // Vista
+  if (viewToggle) {
+    viewToggle.addEventListener('click', toggleViewMode);
+  }
 
-  // Filter panel toggle
+  // Filtros
   if (filterToggle) {
     filterToggle.addEventListener('click', () => {
       filtersPanel.classList.toggle('active');
     });
   }
 
-  // Filter apply button
   if (filterApplyBtn) {
     filterApplyBtn.addEventListener('click', () => {
-      // Get price filter values
       const minPrice = priceFilterMin.value ? parseFloat(priceFilterMin.value) : 0;
       const maxPrice = priceFilterMax.value ? parseFloat(priceFilterMax.value) : Infinity;
       
-      // Update filters
       currentFilters.price.min = minPrice;
       currentFilters.price.max = maxPrice;
       
-      // Apply filters
       applyFilters();
       
-      // On mobile, close filters panel
       if (window.innerWidth < 768) {
         filtersPanel.classList.remove('active');
       }
@@ -1248,294 +821,24 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // Filter reset button
   if (filterResetBtn) {
     filterResetBtn.addEventListener('click', resetFilters);
   }
 
-  // Compare button
-  if (compareBtn) {
-    compareBtn.addEventListener('click', () => {
-      comparePanel.classList.toggle('active');
-      if (comparePanel.classList.contains('active')) {
-        renderCompareProducts();
-      }
-    });
-  }
-
-  // Compare panel close
-  if (comparePanelClose) {
-    comparePanelClose.addEventListener('click', () => {
-      comparePanel.classList.remove('active');
-    });
-  }
-
-  // Shopping list button
-  if (shoppingListBtn) {
-    shoppingListBtn.addEventListener('click', () => {
-      shoppingListPanel.classList.toggle('active');
-      if (shoppingListPanel.classList.contains('active')) {
-        renderShoppingList();
-      }
-    });
-  }
-
-  // Shopping list close
-  if (shoppingListClose) {
-    shoppingListClose.addEventListener('click', () => {
-      shoppingListPanel.classList.remove('active');
-    });
-  }
-
-  // Export shopping list
-  if (exportListBtn) {
-    exportListBtn.addEventListener('click', exportShoppingList);
-  }
-
-  // View toggle
-  if (viewToggle) {
-    viewToggle.addEventListener('click', async () => await toggleViewMode());
-  }
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', e => {
-    // Close modals with Escape key
-    if (e.key === 'Escape') {
-      if (modal.style.display === 'block') {
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('modal-open');
-      }
-      
-      if (comparePanel.classList.contains('active')) {
-        comparePanel.classList.remove('active');
-      }
-      
-      if (shoppingListPanel.classList.contains('active')) {
-        shoppingListPanel.classList.remove('active');
-      }
-      
-      if (sidebar.classList.contains('active') && window.innerWidth < 768) {
-        sidebar.classList.remove('active');
-        document.body.classList.remove('sidebar-open');
-      }
-    }
-    
-    // Search focus with Ctrl+K or /
-    if ((e.ctrlKey && e.key === 'k') || (!e.ctrlKey && !e.shiftKey && e.key === '/')) {
-      if (document.activeElement !== searchInput) {
-        e.preventDefault();
-        searchInput.focus();
-      }
-    }
-  });
-
-  // Mobile and UX enhancements
-  function initMobileEnhancements() {
-    const mobileBottomActions = document.getElementById('mobile-bottom-actions');
-    const connectionStatus = document.getElementById('connection-status');
-    const pullToRefresh = document.getElementById('pull-to-refresh');
-    
-    // Show mobile bottom actions on mobile devices
-    if (window.innerWidth <= 768) {
-      mobileBottomActions.style.display = 'flex';
-      document.body.style.paddingBottom = '80px'; // Space for bottom actions
-    }
-    
-    // Mobile action buttons
-    document.getElementById('mobile-home').addEventListener('click', () => {
-      showAllBtn.click();
-      setActiveMobileButton('mobile-home');
-    });
-    
-    document.getElementById('mobile-favorites').addEventListener('click', () => {
-      const favoritesSection = document.querySelector('.favorites-section');
-      favoritesSection.scrollIntoView({ behavior: 'smooth' });
-      setActiveMobileButton('mobile-favorites');
-    });
-    
-    document.getElementById('mobile-shopping-list').addEventListener('click', () => {
-      shoppingListBtn.click();
-      setActiveMobileButton('mobile-shopping-list');
-    });
-    
-    document.getElementById('mobile-compare').addEventListener('click', () => {
-      compareBtn.click();
-      setActiveMobileButton('mobile-compare');
-    });
-    
-    // Connection status monitoring
-    let connectionCheckInterval;
-    
-    function checkConnection() {
-      if (navigator.onLine) {
-        showConnectionStatus('Conectado', 'online');
-      } else {
-        showConnectionStatus('Sin conexión', 'offline');
-      }
-    }
-    
-    function showConnectionStatus(message, status) {
-      const statusText = document.getElementById('connection-status-text');
-      statusText.textContent = message;
-      connectionStatus.className = `connection-status show ${status}`;
-      
-      // Auto-hide after 3 seconds if online
-      if (status === 'online') {
-        setTimeout(() => {
-          connectionStatus.classList.remove('show');
-        }, 3000);
-      }
-    }
-    
-    // Online/offline event listeners
-    window.addEventListener('online', () => {
-      showConnectionStatus('Conexión restaurada', 'online');
-      // Sync data when coming back online
-      if (authManager.getCurrentUser()) {
-        syncUserData();
-      }
-    });
-    
-    window.addEventListener('offline', () => {
-      showConnectionStatus('Sin conexión a internet', 'offline');
-    });
-    
-    // Initial connection check
-    checkConnection();
-    
-    // Pull to refresh functionality
-    let startY = 0;
-    let isPulling = false;
-    
-    function handleTouchStart(e) {
-      if (window.scrollY === 0) {
-        startY = e.touches[0].clientY;
-        isPulling = true;
-      }
-    }
-    
-    function handleTouchMove(e) {
-      if (!isPulling) return;
-      
-      const currentY = e.touches[0].clientY;
-      const diff = currentY - startY;
-      
-      if (diff > 100) {
-        pullToRefresh.classList.add('show');
-        pullToRefresh.querySelector('span').textContent = 'Suelta para actualizar';
-      } else if (diff > 50) {
-        pullToRefresh.classList.add('show');
-        pullToRefresh.querySelector('span').textContent = 'Tira hacia abajo';
-      }
-    }
-    
-    function handleTouchEnd(e) {
-      if (!isPulling) return;
-      
-      const currentY = e.changedTouches[0].clientY;
-      const diff = currentY - startY;
-      
-      if (diff > 100) {
-        // Trigger refresh
-        pullToRefresh.classList.add('refreshing');
-        pullToRefresh.querySelector('span').textContent = 'Actualizando...';
-        
-        // Simulate refresh (reload products data)
-        setTimeout(() => {
-          location.reload();
-        }, 1000);
-      } else {
-        pullToRefresh.classList.remove('show');
-      }
-      
-      isPulling = false;
-      startY = 0;
-    }
-    
-    // Add touch event listeners for pull to refresh
-    if ('ontouchstart' in window) {
-      document.addEventListener('touchstart', handleTouchStart, { passive: true });
-      document.addEventListener('touchmove', handleTouchMove, { passive: true });
-      document.addEventListener('touchend', handleTouchEnd, { passive: true });
-    }
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      if (window.innerWidth <= 768) {
-        mobileBottomActions.style.display = 'flex';
-        document.body.style.paddingBottom = '80px';
-      } else {
-        mobileBottomActions.style.display = 'none';
-        document.body.style.paddingBottom = '0';
-      }
-    });
-  }
-  
-  function setActiveMobileButton(activeId) {
-    document.querySelectorAll('.mobile-action-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.getElementById(activeId).classList.add('active');
-  }
-  
-  // Enhanced showToast function with actions
-  function showToastWithAction(message, action, actionText = 'DESHACER', type = 'success') {
-    let toast = document.querySelector('.toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.classList.add('toast');
-      document.body.appendChild(toast);
-    }
-    
-    toast.innerHTML = `
-      <span>${message}</span>
-      <button class="toast-action">${actionText}</button>
-    `;
-    
-    toast.className = `toast with-action ${type}`;
-    toast.classList.add('show');
-    
-    // Add action listener
-    const actionBtn = toast.querySelector('.toast-action');
-    actionBtn.addEventListener('click', () => {
-      action();
-      toast.classList.remove('show');
-    });
-    
-    // Auto-hide after 5 seconds (longer for action toasts)
-    setTimeout(() => {
-      toast.classList.remove('show');
-    }, 5000);
-  }
-
-  // Make functions available globally for auth module
-  window.renderFavorites = renderFavorites;
-  window.renderShoppingList = renderShoppingList;
-  window.renderRecentlyViewed = renderRecentlyViewed;
-  window.updateShoppingListCount = updateShoppingListCount;
-  window.updateCompareButton = updateCompareButton;
-  window.showToast = showToast;
-  window.showToastWithAction = showToastWithAction;
-
-  // Init functions
+  // Inicialización
   function initApp() {
-    // Set theme from localStorage
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.dataset.theme = savedTheme;
     themeToggle.innerHTML = savedTheme === 'dark' ? 
       '<i class="fas fa-sun"></i>' : 
       '<i class="fas fa-moon"></i>';
     
-    // Update button states
-    updateCompareButton();
-    updateShoppingListCount();
+    clearSearchBtn.classList.toggle('show', searchInput.value.length > 0);
     
-    // Set correct display for clear search button
-    clearSearchBtn.style.display = searchInput.value.length ? 'block' : 'none';
+    initMobileNavigation();
   }
 
-  // Load data
+  // Cargar datos
   Papa.parse('data/processed/products_macro.csv', {
     download: true,
     header: true,
@@ -1551,9 +854,10 @@ document.addEventListener('DOMContentLoaded', async function () {
       renderFavorites();
       renderRecentlyViewed();
       document.getElementById('filter-results-count').textContent = productsData.length;
+      
+      initializeSearch();
       sortAndRender();
       initApp();
-      initMobileEnhancements();
     },
     error: function (err) {
       productContainer.innerHTML = '<p class="no-products-message">Error al cargar el CSV.</p>';

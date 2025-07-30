@@ -2,25 +2,13 @@
 <html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>¿Qué hay en el súper?</title>
   <meta name="description" content="Explora productos de supermercado, compara precios y crea tu lista de compras personalizada">
-  <meta name="keywords" content="supermercado, productos, lista compras, comparar precios, mercadona">
-  <meta name="author" content="@ComputingVictor">
-  
-  <!-- Open Graph para redes sociales -->
-  <meta property="og:title" content="¿Qué hay en el súper?">
-  <meta property="og:description" content="Explora productos, crea listas y compara precios con sincronización en la nube">
-  <meta property="og:image" content="./img/image.png">
-  <meta property="og:type" content="website">
-  
-  <!-- PWA básico -->
-  <meta name="theme-color" content="#22c55e">
-  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="icon" type="image/png" href="img/image.png" />
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="stylesheet" href="./auth.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="mobile-improvements.css" />
   <!-- Agregar FontAwesome para íconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -33,64 +21,83 @@
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
         <input 
-          type="text" 
+          type="search" 
           id="search-input" 
-          placeholder="Buscar productos... (Ctrl+K)" 
+          placeholder="Buscar productos..." 
           aria-label="Buscador de productos"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
         />
         <button id="clear-search" class="clear-search" aria-label="Borrar búsqueda" title="Borrar búsqueda">
           <i class="fas fa-times"></i>
         </button>
+        <div id="search-suggestions" class="search-suggestions"></div>
       </div>
     </div>
     <div class="header-right">
-      <!-- Botón para comprobar actualizaciones -->
-      <button id="check-updates" class="header-icon-button" aria-label="Comprobar actualizaciones" title="Comprobar actualizaciones">
-        <i class="fas fa-sync-alt"></i>
+      <!-- Botón de menú móvil -->
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
       </button>
-
-      <!-- Nuevo botón para alternar vista -->
-      <button id="view-toggle" class="header-icon-button" aria-label="Cambiar vista" title="Cambiar vista">
-        <i class="fas fa-th-list"></i>
-      </button>
-
-      <!-- Botón para filtros -->
-      <button id="filter-toggle" class="header-icon-button" aria-label="Filtros" title="Filtros">
-        <i class="fas fa-filter"></i>
-      </button>
-
-      <!-- Botón para comparar productos -->
-      <button id="compare-products" class="header-icon-button" aria-label="Comparar productos" title="Comparar productos">
-        <i class="fas fa-balance-scale"></i>
-        <span class="compare-count"></span>
-      </button>
-
-      <!-- Botón para lista de compra -->
-      <button id="shopping-list-btn" class="header-icon-button" aria-label="Lista de compra" title="Lista de compra">
-        <i class="fas fa-shopping-cart"></i>
-        <span class="shopping-list-count"></span>
-      </button>
-
-      <!-- Botón para cambiar tema -->
-      <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
-        <i class="fas fa-moon"></i>
-      </button>
-
-      <!-- User authentication section -->
-      <div id="auth-section">
-        <!-- Will be populated by JavaScript -->
-      </div>
       
-      <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
-        <i class="fab fa-github"></i> <span>@Computingvictor</span>
-      </a>
+      <!-- Desktop actions -->
+      <div class="desktop-actions">
+        <button id="view-toggle" class="header-icon-button" aria-label="Cambiar vista" title="Cambiar vista">
+          <i class="fas fa-th-list"></i>
+        </button>
+        <button id="compare-products" class="header-icon-button" aria-label="Comparar productos" title="Comparar productos">
+          <i class="fas fa-balance-scale"></i>
+          <span class="compare-count"></span>
+        </button>
+        <button id="shopping-list-btn" class="header-icon-button" aria-label="Lista de compra" title="Lista de compra">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="shopping-list-count"></span>
+        </button>
+        <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- Menú móvil overlay -->
+  <div id="mobile-menu-overlay" class="mobile-menu-overlay">
+    <div class="mobile-menu-content">
+      <div class="mobile-menu-header">
+        <h3>Menú</h3>
+        <button id="mobile-menu-close" class="mobile-menu-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-menu-actions">
+        <button class="mobile-menu-item" id="mobile-view-toggle">
+          <i class="fas fa-th-list"></i>
+          <span>Cambiar vista</span>
+        </button>
+        <button class="mobile-menu-item" id="mobile-compare">
+          <i class="fas fa-balance-scale"></i>
+          <span>Comparar</span>
+          <span class="mobile-count compare-count"></span>
+        </button>
+        <button class="mobile-menu-item" id="mobile-shopping-list">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Lista de compra</span>
+          <span class="mobile-count shopping-list-count"></span>
+        </button>
+        <button class="mobile-menu-item" id="mobile-theme">
+          <i class="fas fa-moon"></i>
+          <span>Tema oscuro</span>
+        </button>
+        <button class="mobile-menu-item" id="mobile-filters">
+          <i class="fas fa-filter"></i>
+          <span>Filtros</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
-    <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Mostrar categorías">
-      <i class="fas fa-bars"></i>
-    </button>
 
     <!-- Panel de filtros avanzados -->
     <div id="filters-panel" class="filters-panel">
@@ -245,59 +252,7 @@
     </div>
   </div>
 
-  <!-- Guest mode banner -->
-  <div id="guest-banner" class="guest-banner">
-    <div class="guest-banner-text">
-      <i class="fas fa-info-circle"></i>
-      Estás navegando como invitado. Inicia sesión para sincronizar tus datos entre dispositivos.
-    </div>
-    <button id="guest-banner-login" class="guest-banner-action">Iniciar Sesión</button>
-    <button id="guest-banner-close" class="guest-banner-close">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-
-  <!-- Connection status indicator -->
-  <div id="connection-status" class="connection-status">
-    <div class="status-icon"></div>
-    <span id="connection-status-text">Conectado</span>
-  </div>
-
-  <!-- Sync status indicator -->
-  <div id="sync-status" class="sync-status">
-    <i class="fas fa-sync-alt sync-icon"></i>
-    <span id="sync-status-text">Sincronizando...</span>
-  </div>
-
-  <!-- Pull to refresh indicator -->
-  <div id="pull-to-refresh" class="pull-to-refresh">
-    <i class="fas fa-sync-alt refresh-icon"></i>
-    <span>Suelta para actualizar</span>
-  </div>
-
-  <!-- Mobile bottom actions -->
-  <div id="mobile-bottom-actions" class="mobile-bottom-actions">
-    <button class="mobile-action-btn" id="mobile-home">
-      <i class="fas fa-home"></i>
-      <span>Inicio</span>
-    </button>
-    <button class="mobile-action-btn" id="mobile-favorites">
-      <i class="fas fa-heart"></i>
-      <span>Favoritos</span>
-    </button>
-    <button class="mobile-action-btn" id="mobile-shopping-list">
-      <i class="fas fa-shopping-cart"></i>
-      <span>Lista</span>
-    </button>
-    <button class="mobile-action-btn" id="mobile-compare">
-      <i class="fas fa-balance-scale"></i>
-      <span>Comparar</span>
-    </button>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <script type="module" src="./database.js"></script>
-  <script type="module" src="./auth.js"></script>
-  <script type="module" src="./script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
