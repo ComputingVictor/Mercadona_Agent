@@ -1,4 +1,12 @@
-document.addEventListener('DOMContentLoaded', function () {
+import { Database } from './database.js';
+import { authManager } from './auth.js';
+
+document.addEventListener('DOMContentLoaded', async function () {
+  // Initialize authentication
+  await authManager.init();
+  
+  // Setup auth UI
+  setupAuthUI();
   // DOM elements
   const searchInput = document.getElementById('search-input');
   const clearSearchBtn = document.getElementById('clear-search');
@@ -240,9 +248,9 @@ document.addEventListener('DOMContentLoaded', function () {
       quickAddBtn.classList.add('quick-action-btn');
       quickAddBtn.innerHTML = '<i class="fas fa-cart-plus"></i>';
       quickAddBtn.setAttribute('title', 'Añadir a la lista');
-      quickAddBtn.addEventListener('click', e => {
+      quickAddBtn.addEventListener('click', async e => {
         e.stopPropagation();
-        addToShoppingList(item.name, item);
+        await addToShoppingList(item.name, item);
         showToast('Producto añadido a la lista');
       });
       quickActions.appendChild(quickAddBtn);
@@ -268,8 +276,8 @@ document.addEventListener('DOMContentLoaded', function () {
       // Name with link effect
       const nameEl = document.createElement('h3');
       nameEl.textContent = item.name;
-      nameEl.addEventListener('click', () => {
-        addToRecentlyViewed(item.name);
+      nameEl.addEventListener('click', async () => {
+        await addToRecentlyViewed(item.name);
         // If we had a product details page, we would navigate here
         // For now, open nutrition info if available
         if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
@@ -322,10 +330,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = document.createElement('button');
         btn.classList.add('view-macros-button');
         btn.innerHTML = '<i class="fas fa-chart-pie"></i> Ver macros';
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', async e => {
           e.stopPropagation();
           openModal(item.secondary_image_url);
-          addToRecentlyViewed(item.name);
+          await addToRecentlyViewed(item.name);
         });
         actions.appendChild(btn);
       }
@@ -341,8 +349,8 @@ document.addEventListener('DOMContentLoaded', function () {
       card.appendChild(cardContent);
       
       // Make entire card clickable for better UX
-      card.addEventListener('click', () => {
-        addToRecentlyViewed(item.name);
+      card.addEventListener('click', async () => {
+        await addToRecentlyViewed(item.name);
         // If secondary image exists, show it
         if (item.secondary_image_url && item.secondary_image_url.trim() !== '') {
           openModal(item.secondary_image_url);
@@ -399,20 +407,177 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.classList.add('modal-open');
   }
 
-  function toggleFavorite(productName) {
+  // Auth UI Setup
+  function setupAuthUI() {
+    const authSection = document.getElementById('auth-section');
+    const guestBanner = document.getElementById('guest-banner');
+    const guestBannerLogin = document.getElementById('guest-banner-login');
+    const guestBannerClose = document.getElementById('guest-banner-close');
+    
+    // Show guest banner if dismissed flag is not set
+    const guestBannerDismissed = localStorage.getItem('guestBannerDismissed');
+    if (!guestBannerDismissed && !authManager.isLoggedIn()) {
+      guestBanner.classList.add('show');
+    }
+    
+    // Guest banner event listeners
+    guestBannerLogin.addEventListener('click', () => {
+      authManager.showAuthModal();
+    });
+    
+    guestBannerClose.addEventListener('click', () => {
+      guestBanner.classList.remove('show');
+      localStorage.setItem('guestBannerDismissed', 'true');
+    });
+    
+    // Listen to auth state changes
+    authManager.onAuthStateChange((user) => {
+      updateAuthUI(user);
+    });
+    
+    // Initial auth UI update
+    updateAuthUI(authManager.getCurrentUser());
+  }
+  
+  function updateAuthUI(user) {
+    const authSection = document.getElementById('auth-section');
+    const guestBanner = document.getElementById('guest-banner');
+    
+    if (user) {
+      // User is logged in
+      guestBanner.classList.remove('show');
+      
+      const userEmail = user.email || '';
+      const initials = userEmail.split('@')[0].slice(0, 2).toUpperCase();
+      
+      authSection.innerHTML = `
+        <div class="user-profile user-dropdown">
+          <div class="auth-status" id="auth-status">
+            <div class="user-avatar">${initials}</div>
+            <div class="user-email">${userEmail}</div>
+          </div>
+          <div class="user-dropdown-menu" id="user-dropdown-menu">
+            <button class="user-dropdown-item" id="user-preferences">
+              <i class="fas fa-cog"></i> Preferencias
+            </button>
+            <button class="user-dropdown-item" id="sync-data">
+              <i class="fas fa-sync-alt"></i> Sincronizar datos
+            </button>
+            <button class="user-dropdown-item danger" id="sign-out">
+              <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+            </button>
+          </div>
+        </div>
+      `;
+      
+      setupUserDropdown();
+    } else {
+      // User is not logged in
+      const guestBannerDismissed = localStorage.getItem('guestBannerDismissed');
+      if (!guestBannerDismissed) {
+        guestBanner.classList.add('show');
+      }
+      
+      authSection.innerHTML = `
+        <button class="login-button" id="login-button">
+          <i class="fas fa-sign-in-alt"></i>
+          <span>Iniciar Sesión</span>
+        </button>
+      `;
+      
+      document.getElementById('login-button').addEventListener('click', () => {
+        authManager.showAuthModal();
+      });
+    }
+  }
+  
+  function setupUserDropdown() {
+    const authStatus = document.getElementById('auth-status');
+    const dropdownMenu = document.getElementById('user-dropdown-menu');
+    const signOutBtn = document.getElementById('sign-out');
+    const syncDataBtn = document.getElementById('sync-data');
+    
+    // Toggle dropdown
+    authStatus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownMenu.classList.toggle('show');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+      dropdownMenu.classList.remove('show');
+    });
+    
+    // Sign out
+    signOutBtn.addEventListener('click', async () => {
+      await authManager.signOut();
+      dropdownMenu.classList.remove('show');
+    });
+    
+    // Sync data
+    syncDataBtn.addEventListener('click', async () => {
+      await syncUserData();
+      dropdownMenu.classList.remove('show');
+    });
+  }
+  
+  async function syncUserData() {
+    const user = authManager.getCurrentUser();
+    if (!user) return;
+    
+    showSyncStatus('Sincronizando datos...', 'loading');
+    
+    try {
+      await Database.syncLocalStorageToDatabase(user.id);
+      await authManager.loadUserDataFromDatabase();
+      showSyncStatus('Datos sincronizados correctamente', 'success');
+    } catch (error) {
+      console.error('Error syncing data:', error);
+      showSyncStatus('Error al sincronizar datos', 'error');
+    }
+  }
+  
+  function showSyncStatus(message, type) {
+    const syncStatus = document.getElementById('sync-status');
+    const syncStatusText = document.getElementById('sync-status-text');
+    
+    syncStatusText.textContent = message;
+    syncStatus.className = `sync-status show ${type}`;
+    
+    setTimeout(() => {
+      syncStatus.classList.remove('show');
+    }, 3000);
+  }
+
+  async function toggleFavorite(productName) {
+    const user = authManager.getCurrentUser();
+    
     if (favorites.includes(productName)) {
       favorites = favorites.filter(f => f !== productName);
       showToast('Eliminado de favoritos');
+      
+      // Remove from database if user is logged in
+      if (user) {
+        await Database.removeFavorite(user.id, productName);
+      }
     } else {
       favorites.push(productName);
       showToast('Añadido a favoritos');
+      
+      // Add to database if user is logged in
+      if (user) {
+        await Database.addFavorite(user.id, productName);
+      }
     }
+    
     localStorage.setItem('favorites', JSON.stringify(favorites));
     renderFavorites();
     sortAndRender(); // Re-render to update favorite buttons
   }
 
-  function addToRecentlyViewed(productName) {
+  async function addToRecentlyViewed(productName) {
+    const user = authManager.getCurrentUser();
+    
     // Remove if already exists to move to front
     recentlyViewed = recentlyViewed.filter(name => name !== productName);
     
@@ -423,6 +588,12 @@ document.addEventListener('DOMContentLoaded', function () {
     recentlyViewed = recentlyViewed.slice(0, 5);
     
     localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+    
+    // Add to database if user is logged in
+    if (user) {
+      await Database.addRecentlyViewed(user.id, productName);
+    }
+    
     renderRecentlyViewed();
   }
 
@@ -466,8 +637,8 @@ document.addEventListener('DOMContentLoaded', function () {
       addToListBtn.classList.add('add-to-list-btn');
       addToListBtn.innerHTML = '<i class="fas fa-cart-plus"></i>';
       addToListBtn.setAttribute('title', 'Añadir a la lista');
-      addToListBtn.addEventListener('click', () => {
-        addToShoppingList(product.name, product);
+      addToListBtn.addEventListener('click', async () => {
+        await addToShoppingList(product.name, product);
         showToast('Producto añadido a la lista');
       });
       actions.appendChild(addToListBtn);
@@ -483,9 +654,9 @@ document.addEventListener('DOMContentLoaded', function () {
       div.appendChild(actions);
       
       // Make whole item clickable
-      div.addEventListener('click', (e) => {
+      div.addEventListener('click', async (e) => {
         if (e.target === div || e.target.tagName === 'IMG' || e.target.classList.contains('favorite-item-name')) {
-          addToRecentlyViewed(product.name);
+          await addToRecentlyViewed(product.name);
           if (product.secondary_image_url && product.secondary_image_url.trim() !== '') {
             openModal(product.secondary_image_url);
           }
@@ -530,8 +701,8 @@ document.addEventListener('DOMContentLoaded', function () {
       div.appendChild(info);
       
       // Make item clickable
-      div.addEventListener('click', () => {
-        addToRecentlyViewed(product.name); // Move to top of list
+      div.addEventListener('click', async () => {
+        await addToRecentlyViewed(product.name); // Move to top of list
         if (product.secondary_image_url && product.secondary_image_url.trim() !== '') {
           openModal(product.secondary_image_url);
         }
@@ -690,7 +861,9 @@ document.addEventListener('DOMContentLoaded', function () {
     compareList.appendChild(table);
   }
 
-  function addToShoppingList(productName, product) {
+  async function addToShoppingList(productName, product) {
+    const user = authManager.getCurrentUser();
+    
     // Create shopping list structure if it doesn't exist
     if (!shoppingList[productName]) {
       shoppingList[productName] = {
@@ -705,6 +878,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Save to localStorage
     localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
     
+    // Add to database if user is logged in
+    if (user) {
+      await Database.addToShoppingList(user.id, productName, product, 1);
+    }
+    
     // Update UI if panel is open
     if (shoppingListPanel.classList.contains('active')) {
       renderShoppingList();
@@ -714,9 +892,17 @@ document.addEventListener('DOMContentLoaded', function () {
     updateShoppingListCount();
   }
 
-  function removeFromShoppingList(productName) {
+  async function removeFromShoppingList(productName) {
+    const user = authManager.getCurrentUser();
+    
     delete shoppingList[productName];
     localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+    
+    // Remove from database if user is logged in
+    if (user) {
+      await Database.removeFromShoppingList(user.id, productName);
+    }
+    
     renderShoppingList();
     updateShoppingListCount();
   }
@@ -785,13 +971,21 @@ document.addEventListener('DOMContentLoaded', function () {
       
       const decreaseBtn = document.createElement('button');
       decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
-      decreaseBtn.addEventListener('click', () => {
+      decreaseBtn.addEventListener('click', async () => {
+        const user = authManager.getCurrentUser();
+        
         if (quantity > 1) {
           shoppingList[name].quantity -= 1;
           localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+          
+          // Update in database if user is logged in
+          if (user) {
+            await Database.updateShoppingListQuantity(user.id, name, shoppingList[name].quantity);
+          }
+          
           renderShoppingList();
         } else {
-          removeFromShoppingList(name);
+          await removeFromShoppingList(name);
         }
       });
       quantityControls.appendChild(decreaseBtn);
@@ -803,9 +997,17 @@ document.addEventListener('DOMContentLoaded', function () {
       
       const increaseBtn = document.createElement('button');
       increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
-      increaseBtn.addEventListener('click', () => {
+      increaseBtn.addEventListener('click', async () => {
+        const user = authManager.getCurrentUser();
+        
         shoppingList[name].quantity += 1;
         localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
+        
+        // Update in database if user is logged in
+        if (user) {
+          await Database.updateShoppingListQuantity(user.id, name, shoppingList[name].quantity);
+        }
+        
         renderShoppingList();
       });
       quantityControls.appendChild(increaseBtn);
@@ -834,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const removeBtn = document.createElement('button');
       removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
       removeBtn.classList.add('remove-from-list');
-      removeBtn.addEventListener('click', () => removeFromShoppingList(name));
+      removeBtn.addEventListener('click', async () => await removeFromShoppingList(name));
       actions.appendChild(removeBtn);
       
       listItem.appendChild(actions);
@@ -878,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function () {
     showToast('Lista de la compra exportada correctamente');
   }
 
-  function toggleViewMode() {
+  async function toggleViewMode() {
     currentView = currentView === 'grid' ? 'list' : 'grid';
     localStorage.setItem('currentView', currentView);
     
@@ -891,6 +1093,17 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Re-render products
     sortAndRender();
+    
+    // Save to database if user is logged in
+    const user = authManager.getCurrentUser();
+    if (user) {
+      const preferences = {
+        theme: localStorage.getItem('theme') || 'light',
+        itemsPerPage: parseInt(localStorage.getItem('itemsPerPage') || '20'),
+        currentView: currentView
+      };
+      await Database.saveUserPreferences(user.id, preferences);
+    }
   }
 
   function showToast(message, type = 'success') {
@@ -932,11 +1145,22 @@ document.addEventListener('DOMContentLoaded', function () {
     resetFilters();
   });
 
-  itemsPerPageSelect.addEventListener('change', () => {
+  itemsPerPageSelect.addEventListener('change', async () => {
     itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
     localStorage.setItem('itemsPerPage', itemsPerPage.toString());
     currentPage = 1;
     sortAndRender();
+    
+    // Save to database if user is logged in
+    const user = authManager.getCurrentUser();
+    if (user) {
+      const preferences = {
+        theme: localStorage.getItem('theme') || 'light',
+        itemsPerPage: itemsPerPage,
+        currentView: localStorage.getItem('currentView') || 'grid'
+      };
+      await Database.saveUserPreferences(user.id, preferences);
+    }
   });
 
   sortSelect.addEventListener('change', () => {
@@ -965,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Theme toggle
-  themeToggle.addEventListener('click', () => {
+  themeToggle.addEventListener('click', async () => {
     const html = document.documentElement;
     const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
     html.dataset.theme = newTheme;
@@ -975,6 +1199,17 @@ document.addEventListener('DOMContentLoaded', function () {
     themeToggle.innerHTML = newTheme === 'dark' ? 
       '<i class="fas fa-sun"></i>' : 
       '<i class="fas fa-moon"></i>';
+    
+    // Save to database if user is logged in
+    const user = authManager.getCurrentUser();
+    if (user) {
+      const preferences = {
+        theme: newTheme,
+        itemsPerPage: parseInt(localStorage.getItem('itemsPerPage') || '20'),
+        currentView: localStorage.getItem('currentView') || 'grid'
+      };
+      await Database.saveUserPreferences(user.id, preferences);
+    }
   });
 
   // Mobile menu toggle
@@ -1059,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // View toggle
   if (viewToggle) {
-    viewToggle.addEventListener('click', toggleViewMode);
+    viewToggle.addEventListener('click', async () => await toggleViewMode());
   }
 
   // Keyboard shortcuts
@@ -1094,6 +1329,194 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   });
+
+  // Mobile and UX enhancements
+  function initMobileEnhancements() {
+    const mobileBottomActions = document.getElementById('mobile-bottom-actions');
+    const connectionStatus = document.getElementById('connection-status');
+    const pullToRefresh = document.getElementById('pull-to-refresh');
+    
+    // Show mobile bottom actions on mobile devices
+    if (window.innerWidth <= 768) {
+      mobileBottomActions.style.display = 'flex';
+      document.body.style.paddingBottom = '80px'; // Space for bottom actions
+    }
+    
+    // Mobile action buttons
+    document.getElementById('mobile-home').addEventListener('click', () => {
+      showAllBtn.click();
+      setActiveMobileButton('mobile-home');
+    });
+    
+    document.getElementById('mobile-favorites').addEventListener('click', () => {
+      const favoritesSection = document.querySelector('.favorites-section');
+      favoritesSection.scrollIntoView({ behavior: 'smooth' });
+      setActiveMobileButton('mobile-favorites');
+    });
+    
+    document.getElementById('mobile-shopping-list').addEventListener('click', () => {
+      shoppingListBtn.click();
+      setActiveMobileButton('mobile-shopping-list');
+    });
+    
+    document.getElementById('mobile-compare').addEventListener('click', () => {
+      compareBtn.click();
+      setActiveMobileButton('mobile-compare');
+    });
+    
+    // Connection status monitoring
+    let connectionCheckInterval;
+    
+    function checkConnection() {
+      if (navigator.onLine) {
+        showConnectionStatus('Conectado', 'online');
+      } else {
+        showConnectionStatus('Sin conexión', 'offline');
+      }
+    }
+    
+    function showConnectionStatus(message, status) {
+      const statusText = document.getElementById('connection-status-text');
+      statusText.textContent = message;
+      connectionStatus.className = `connection-status show ${status}`;
+      
+      // Auto-hide after 3 seconds if online
+      if (status === 'online') {
+        setTimeout(() => {
+          connectionStatus.classList.remove('show');
+        }, 3000);
+      }
+    }
+    
+    // Online/offline event listeners
+    window.addEventListener('online', () => {
+      showConnectionStatus('Conexión restaurada', 'online');
+      // Sync data when coming back online
+      if (authManager.getCurrentUser()) {
+        syncUserData();
+      }
+    });
+    
+    window.addEventListener('offline', () => {
+      showConnectionStatus('Sin conexión a internet', 'offline');
+    });
+    
+    // Initial connection check
+    checkConnection();
+    
+    // Pull to refresh functionality
+    let startY = 0;
+    let isPulling = false;
+    
+    function handleTouchStart(e) {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+        isPulling = true;
+      }
+    }
+    
+    function handleTouchMove(e) {
+      if (!isPulling) return;
+      
+      const currentY = e.touches[0].clientY;
+      const diff = currentY - startY;
+      
+      if (diff > 100) {
+        pullToRefresh.classList.add('show');
+        pullToRefresh.querySelector('span').textContent = 'Suelta para actualizar';
+      } else if (diff > 50) {
+        pullToRefresh.classList.add('show');
+        pullToRefresh.querySelector('span').textContent = 'Tira hacia abajo';
+      }
+    }
+    
+    function handleTouchEnd(e) {
+      if (!isPulling) return;
+      
+      const currentY = e.changedTouches[0].clientY;
+      const diff = currentY - startY;
+      
+      if (diff > 100) {
+        // Trigger refresh
+        pullToRefresh.classList.add('refreshing');
+        pullToRefresh.querySelector('span').textContent = 'Actualizando...';
+        
+        // Simulate refresh (reload products data)
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      } else {
+        pullToRefresh.classList.remove('show');
+      }
+      
+      isPulling = false;
+      startY = 0;
+    }
+    
+    // Add touch event listeners for pull to refresh
+    if ('ontouchstart' in window) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768) {
+        mobileBottomActions.style.display = 'flex';
+        document.body.style.paddingBottom = '80px';
+      } else {
+        mobileBottomActions.style.display = 'none';
+        document.body.style.paddingBottom = '0';
+      }
+    });
+  }
+  
+  function setActiveMobileButton(activeId) {
+    document.querySelectorAll('.mobile-action-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.getElementById(activeId).classList.add('active');
+  }
+  
+  // Enhanced showToast function with actions
+  function showToastWithAction(message, action, actionText = 'DESHACER', type = 'success') {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.classList.add('toast');
+      document.body.appendChild(toast);
+    }
+    
+    toast.innerHTML = `
+      <span>${message}</span>
+      <button class="toast-action">${actionText}</button>
+    `;
+    
+    toast.className = `toast with-action ${type}`;
+    toast.classList.add('show');
+    
+    // Add action listener
+    const actionBtn = toast.querySelector('.toast-action');
+    actionBtn.addEventListener('click', () => {
+      action();
+      toast.classList.remove('show');
+    });
+    
+    // Auto-hide after 5 seconds (longer for action toasts)
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 5000);
+  }
+
+  // Make functions available globally for auth module
+  window.renderFavorites = renderFavorites;
+  window.renderShoppingList = renderShoppingList;
+  window.renderRecentlyViewed = renderRecentlyViewed;
+  window.updateShoppingListCount = updateShoppingListCount;
+  window.updateCompareButton = updateCompareButton;
+  window.showToast = showToast;
+  window.showToastWithAction = showToastWithAction;
 
   // Init functions
   function initApp() {
@@ -1130,6 +1553,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('filter-results-count').textContent = productsData.length;
       sortAndRender();
       initApp();
+      initMobileEnhancements();
     },
     error: function (err) {
       productContainer.innerHTML = '<p class="no-products-message">Error al cargar el CSV.</p>';

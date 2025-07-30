@@ -5,9 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>¿Qué hay en el súper?</title>
   <meta name="description" content="Explora productos de supermercado, compara precios y crea tu lista de compras personalizada">
+  <meta name="keywords" content="supermercado, productos, lista compras, comparar precios, mercadona">
+  <meta name="author" content="@ComputingVictor">
+  
+  <!-- Open Graph para redes sociales -->
+  <meta property="og:title" content="¿Qué hay en el súper?">
+  <meta property="og:description" content="Explora productos, crea listas y compara precios con sincronización en la nube">
+  <meta property="og:image" content="./img/image.png">
+  <meta property="og:type" content="website">
+  
+  <!-- PWA básico -->
+  <meta name="theme-color" content="#22c55e">
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
   <link rel="icon" type="image/png" href="img/image.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./auth.css" />
   <!-- Agregar FontAwesome para íconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -62,6 +75,11 @@
       <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
         <i class="fas fa-moon"></i>
       </button>
+
+      <!-- User authentication section -->
+      <div id="auth-section">
+        <!-- Will be populated by JavaScript -->
+      </div>
       
       <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
         <i class="fab fa-github"></i> <span>@Computingvictor</span>
@@ -227,7 +245,59 @@
     </div>
   </div>
 
+  <!-- Guest mode banner -->
+  <div id="guest-banner" class="guest-banner">
+    <div class="guest-banner-text">
+      <i class="fas fa-info-circle"></i>
+      Estás navegando como invitado. Inicia sesión para sincronizar tus datos entre dispositivos.
+    </div>
+    <button id="guest-banner-login" class="guest-banner-action">Iniciar Sesión</button>
+    <button id="guest-banner-close" class="guest-banner-close">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Connection status indicator -->
+  <div id="connection-status" class="connection-status">
+    <div class="status-icon"></div>
+    <span id="connection-status-text">Conectado</span>
+  </div>
+
+  <!-- Sync status indicator -->
+  <div id="sync-status" class="sync-status">
+    <i class="fas fa-sync-alt sync-icon"></i>
+    <span id="sync-status-text">Sincronizando...</span>
+  </div>
+
+  <!-- Pull to refresh indicator -->
+  <div id="pull-to-refresh" class="pull-to-refresh">
+    <i class="fas fa-sync-alt refresh-icon"></i>
+    <span>Suelta para actualizar</span>
+  </div>
+
+  <!-- Mobile bottom actions -->
+  <div id="mobile-bottom-actions" class="mobile-bottom-actions">
+    <button class="mobile-action-btn" id="mobile-home">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </button>
+    <button class="mobile-action-btn" id="mobile-favorites">
+      <i class="fas fa-heart"></i>
+      <span>Favoritos</span>
+    </button>
+    <button class="mobile-action-btn" id="mobile-shopping-list">
+      <i class="fas fa-shopping-cart"></i>
+      <span>Lista</span>
+    </button>
+    <button class="mobile-action-btn" id="mobile-compare">
+      <i class="fas fa-balance-scale"></i>
+      <span>Comparar</span>
+    </button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <script src="script.js"></script>
+  <script type="module" src="./database.js"></script>
+  <script type="module" src="./auth.js"></script>
+  <script type="module" src="./script.js"></script>
 </body>
 </html>

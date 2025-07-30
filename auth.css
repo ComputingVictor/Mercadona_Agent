@@ -1,0 +1,578 @@
+/* Authentication Modal Styles */
+.auth-modal-content {
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: var(--rounded-lg);
+  max-width: 400px;
+  width: 90%;
+  margin: 0 auto;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--secondary-text);
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.auth-tab.active {
+  color: var(--brand-accent);
+  border-bottom-color: var(--brand-accent);
+}
+
+.auth-tab:hover {
+  color: var(--text-color);
+}
+
+.auth-form {
+  animation: fadeIn 0.3s ease;
+}
+
+.auth-form h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--rounded-md);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: var(--brand-accent);
+  color: white;
+  border: none;
+  border-radius: var(--rounded-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.auth-button:hover:not(:disabled) {
+  background-color: var(--brand-accent-hover);
+  transform: translateY(-1px);
+}
+
+.auth-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* User Profile Section */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--rounded-md);
+  transition: all 0.2s;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.user-profile:hover {
+  background-color: var(--active-category-bg);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.user-email {
+  font-size: 0.875rem;
+  color: var(--secondary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.user-dropdown {
+  position: relative;
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--rounded-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 180px;
+  z-index: 1000;
+  padding: 0.5rem 0;
+  display: none;
+}
+
+.user-dropdown-menu.show {
+  display: block;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.user-dropdown-item:hover {
+  background-color: var(--active-category-bg);
+}
+
+.user-dropdown-item.danger {
+  color: var(--red-500);
+}
+
+.user-dropdown-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Auth Status Indicator */
+.auth-status {
+  position: relative;
+}
+
+.auth-status::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  border: 2px solid var(--card-bg);
+}
+
+.auth-status.offline::after {
+  background-color: var(--tertiary-text);
+}
+
+/* Login Button */
+.login-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--brand-accent);
+  color: white;
+  border: none;
+  border-radius: var(--rounded-md);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.login-button:hover {
+  background-color: var(--brand-accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Sync Status Indicator */
+.sync-status {
+  position: fixed;
+  bottom: 20px;
+  right: 80px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--rounded-md);
+  padding: 0.5rem 1rem;
+  box-shadow: var(--shadow-md);
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 1000;
+}
+
+.sync-status.show {
+  display: flex;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sync-icon {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+.sync-status.success .sync-icon {
+  animation: none;
+  color: var(--brand-accent);
+}
+
+.sync-status.error .sync-icon {
+  animation: none;
+  color: var(--red-500);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Guest Mode Banner */
+.guest-banner {
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent-hover));
+  color: white;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.guest-banner.show {
+  display: flex;
+}
+
+.guest-banner-text {
+  flex: 1;
+}
+
+.guest-banner-action {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--rounded-sm);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.guest-banner-action:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.guest-banner-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.guest-banner-close:hover {
+  opacity: 1;
+}
+
+/* Connection Status Indicator */
+.connection-status {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--rounded-md);
+  padding: 0.5rem 1rem;
+  box-shadow: var(--shadow-md);
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 999;
+  min-width: 120px;
+}
+
+.connection-status.show {
+  display: flex;
+  animation: slideDown 0.3s ease;
+}
+
+.connection-status.online {
+  border-left: 4px solid var(--brand-accent);
+  color: var(--brand-accent);
+}
+
+.connection-status.offline {
+  border-left: 4px solid var(--red-500);
+  color: var(--red-500);
+}
+
+.connection-status.reconnecting {
+  border-left: 4px solid var(--yellow-500);
+  color: var(--yellow-500);
+}
+
+.connection-status .status-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+.connection-status.reconnecting .status-icon {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Enhanced Mobile UX */
+.mobile-bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 1rem;
+  display: none;
+  justify-content: space-around;
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--secondary-text);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--rounded-md);
+  transition: all 0.2s;
+  font-size: 0.75rem;
+  min-width: 60px;
+}
+
+.mobile-action-btn:hover,
+.mobile-action-btn.active {
+  color: var(--brand-accent);
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.mobile-action-btn i {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Pull to refresh indicator */
+.pull-to-refresh {
+  position: fixed;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 var(--rounded-lg) var(--rounded-lg);
+  padding: 1rem 2rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 1000;
+  transition: top 0.3s ease;
+}
+
+.pull-to-refresh.show {
+  top: 0;
+}
+
+.pull-to-refresh.refreshing .refresh-icon {
+  animation: spin 1s linear infinite;
+}
+
+/* Enhanced toast notifications */
+.toast.with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-right: 1rem;
+}
+
+.toast-action {
+  background: none;
+  border: none;
+  color: var(--brand-accent);
+  cursor: pointer;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--rounded-sm);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.toast-action:hover {
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* Progress indicators */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background-color: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--brand-accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar.indeterminate .progress-bar-fill {
+  width: 30%;
+  animation: indeterminate 2s infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Responsive styles for auth components */
+@media (max-width: 768px) {
+  .auth-modal-content {
+    padding: 1.5rem;
+    margin: 10px;
+  }
+  
+  .user-email {
+    display: none;
+  }
+  
+  .user-dropdown-menu {
+    right: -20px;
+    min-width: 160px;
+  }
+  
+  .guest-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+  
+  .guest-banner-text {
+    text-align: center;
+  }
+  
+  .sync-status {
+    right: 20px;
+    left: 20px;
+    right: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-tabs {
+    margin-bottom: 1.5rem;
+  }
+  
+  .auth-tab {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .user-dropdown-menu {
+    min-width: 140px;
+  }
+}
