@@ -2,27 +2,31 @@
    MEJORAS ESPECÍFICAS PARA MÓVIL
    ================================================= */
 
-/* Optimización táctil general */
-* {
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+/* Optimización táctil general - solo móvil */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
-input, textarea {
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-/* Prevenir zoom en inputs en iOS */
-input[type="search"],
-input[type="text"],
-input[type="email"],
-input[type="password"],
-select,
-textarea {
-  font-size: 16px !important;
+/* Prevenir zoom en inputs en iOS - solo móvil */
+@media (max-width: 768px) {
+  input[type="search"],
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Scroll suave en toda la aplicación */
@@ -600,13 +604,70 @@ body {
 }
 
 @media (min-width: 769px) {
+  /* Restaurar experiencia de escritorio */
   body {
     position: static;
+    overflow-x: auto;
+    overscroll-behavior: auto;
   }
   
   .container {
     position: static;
     overflow: visible;
+  }
+
+  /* Asegurar que las acciones de escritorio sean visibles */
+  .desktop-actions {
+    display: flex !important;
+  }
+
+  .mobile-menu-btn {
+    display: none !important;
+  }
+
+  /* Mejorar la navegación con scroll suave */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Restaurar interacciones normales del mouse */
+  * {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+
+  /* Mejor experiencia de hover en desktop */
+  .product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    transition: all 0.2s ease;
+  }
+
+  button:hover {
+    transform: none;
+    cursor: pointer;
+  }
+
+  /* Desactivar efectos táctiles en desktop */
+  .product-card,
+  .mobile-menu-item,
+  .search-suggestion,
+  button {
+    -webkit-transform: none;
+    transform: none;
+  }
+
+  /* Mejorar visibilidad del botón de macros en desktop */
+  .view-macros-button {
+    background-color: #059669;
+    border: 2px solid #047857;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .view-macros-button:hover {
+    background-color: #047857;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 }
 
