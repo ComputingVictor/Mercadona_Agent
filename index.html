@@ -127,7 +127,10 @@
     <div class="mobile-menu-overlay"></div>
     <div class="mobile-menu-content">
       <div class="mobile-menu-header">
-        <h2>Menú</h2>
+        <div class="mobile-menu-brand">
+          <img src="img/image.png" alt="Logo" class="mobile-menu-logo">
+          <h2>¿Qué hay en el súper?</h2>
+        </div>
         <button 
           id="mobile-menu-close" 
           class="mobile-menu-close"
@@ -138,22 +141,61 @@
       </div>
       
       <div class="mobile-menu-body">
-        <button class="mobile-menu-item" data-action="cart">
-          <i class="fas fa-shopping-cart" aria-hidden="true"></i>
-          <span>Lista de compra</span>
-          <span class="mobile-badge" id="mobile-cart-count">0</span>
-        </button>
-        
-        
-        <button class="mobile-menu-item" data-action="filters">
-          <i class="fas fa-filter" aria-hidden="true"></i>
-          <span>Filtros</span>
-        </button>
-        
-        <button class="mobile-menu-item" data-action="theme">
-          <i class="fas fa-moon" aria-hidden="true"></i>
-          <span>Tema oscuro</span>
-        </button>
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-section-title">Acciones principales</h3>
+          <div class="mobile-menu-items">
+            <button class="mobile-menu-item mobile-menu-item--primary" data-action="cart">
+              <div class="mobile-menu-item-icon">
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                <span class="mobile-badge" id="mobile-cart-count">0</span>
+              </div>
+              <div class="mobile-menu-item-content">
+                <span class="mobile-menu-item-title">Lista de compra</span>
+                <span class="mobile-menu-item-subtitle">Ver productos añadidos</span>
+              </div>
+              <i class="fas fa-chevron-right mobile-menu-item-arrow" aria-hidden="true"></i>
+            </button>
+            
+            <button class="mobile-menu-item" data-action="filters">
+              <div class="mobile-menu-item-icon">
+                <i class="fas fa-filter" aria-hidden="true"></i>
+              </div>
+              <div class="mobile-menu-item-content">
+                <span class="mobile-menu-item-title">Filtros y categorías</span>
+                <span class="mobile-menu-item-subtitle">Refinar búsqueda</span>
+              </div>
+              <i class="fas fa-chevron-right mobile-menu-item-arrow" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-section-title">Configuración</h3>
+          <div class="mobile-menu-items">
+            <button class="mobile-menu-item" data-action="theme">
+              <div class="mobile-menu-item-icon">
+                <i class="fas fa-moon" aria-hidden="true"></i>
+              </div>
+              <div class="mobile-menu-item-content">
+                <span class="mobile-menu-item-title">Tema oscuro</span>
+                <span class="mobile-menu-item-subtitle">Cambiar apariencia</span>
+              </div>
+              <div class="mobile-menu-toggle">
+                <div class="toggle-switch">
+                  <input type="checkbox" id="theme-toggle-mobile" class="toggle-input">
+                  <span class="toggle-slider"></span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="mobile-menu-footer">
+          <div class="mobile-menu-app-info">
+            <p class="mobile-menu-version">Versión 2.0</p>
+            <p class="mobile-menu-description">Busca y organiza productos de supermercado</p>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
