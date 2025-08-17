@@ -1314,11 +1314,6 @@ class MercadonaApp {
     this.state.currentPage = newPage;
     this.updateProductsDisplay();
     this.updatePagination();
-    
-    // Scroll to top of products grid
-    if (this.elements.productsGrid) {
-      this.elements.productsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   }
 
 
