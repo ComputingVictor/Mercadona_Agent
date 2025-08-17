@@ -84,16 +84,6 @@
         <!-- Desktop actions -->
         <div class="desktop-actions">
           <button 
-            id="compare-btn" 
-            class="action-btn" 
-            aria-label="Comparar productos"
-            title="Productos para comparar"
-          >
-            <i class="fas fa-balance-scale" aria-hidden="true"></i>
-            <span class="badge" id="compare-count">0</span>
-          </button>
-          
-          <button 
             id="cart-btn" 
             class="action-btn" 
             aria-label="Lista de compra"
@@ -102,6 +92,7 @@
             <i class="fas fa-shopping-cart" aria-hidden="true"></i>
             <span class="badge" id="cart-count">0</span>
           </button>
+          
           
           <button 
             id="theme-toggle" 
@@ -147,17 +138,12 @@
       </div>
       
       <div class="mobile-menu-body">
-        <button class="mobile-menu-item" data-action="compare">
-          <i class="fas fa-balance-scale" aria-hidden="true"></i>
-          <span>Comparar</span>
-          <span class="mobile-badge" id="mobile-compare-count">0</span>
-        </button>
-        
         <button class="mobile-menu-item" data-action="cart">
           <i class="fas fa-shopping-cart" aria-hidden="true"></i>
           <span>Lista de compra</span>
           <span class="mobile-badge" id="mobile-cart-count">0</span>
         </button>
+        
         
         <button class="mobile-menu-item" data-action="filters">
           <i class="fas fa-filter" aria-hidden="true"></i>
@@ -394,24 +380,6 @@
     </div>
   </div>
 
-  <!-- Compare Panel -->
-  <div id="compare-panel" class="side-panel" aria-hidden="true">
-    <div class="side-panel-header">
-      <h2>
-        <i class="fas fa-balance-scale" aria-hidden="true"></i>
-        Comparar productos
-      </h2>
-      <button id="compare-panel-close" class="side-panel-close" aria-label="Cerrar panel">
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
-    <div class="side-panel-body">
-      <div id="compare-list" class="compare-list">
-        <p class="empty-state">Selecciona hasta 3 productos para comparar</p>
-      </div>
-    </div>
-  </div>
-
   <!-- Shopping Cart Panel -->
   <div id="cart-panel" class="side-panel" aria-hidden="true">
     <div class="side-panel-header">
@@ -438,6 +406,14 @@
       </button>
     </div>
   </div>
+
+  <!-- Mobile Filters FAB -->
+  <button id="mobile-filters-fab" class="mobile-filters-fab" aria-label="Abrir filtros y categorías" style="display: none;">
+    <i class="fas fa-filter" aria-hidden="true"></i>
+  </button>
+
+  <!-- Sidebar Overlay for Mobile -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
   <!-- Toast Notifications -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>

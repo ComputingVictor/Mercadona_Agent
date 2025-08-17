@@ -29,7 +29,6 @@ class MercadonaApp {
       categories: new Map(),
       favorites: new Set(),
       cart: new Map(),
-      compareList: new Set(),
       recentlyViewed: [],
       currentPage: 1,
       itemsPerPage: 24,
@@ -127,9 +126,7 @@ class MercadonaApp {
       mobileMenuOverlay: '.mobile-menu-overlay',
       
       // Action buttons
-      compareBtn: '#compare-btn',
       cartBtn: '#cart-btn',
-      compareCount: '#compare-count',
       cartCount: '#cart-count',
       
       // Sidebar
@@ -165,8 +162,6 @@ class MercadonaApp {
       // Modals and panels
       productModal: '#product-modal',
       modalClose: '#modal-close',
-      comparePanel: '#compare-panel',
-      comparePanelClose: '#compare-panel-close',
       cartPanel: '#cart-panel',
       cartPanelClose: '#cart-panel-close',
       cartList: '#cart-list',
@@ -178,7 +173,11 @@ class MercadonaApp {
       
       // Empty state
       emptyState: '#empty-state',
-      clearAllFilters: '#clear-all-filters'
+      clearAllFilters: '#clear-all-filters',
+      
+      // Mobile filters FAB
+      mobileFiltersFab: '#mobile-filters-fab',
+      sidebarOverlay: '#sidebar-overlay'
     };
 
     // Cache all elements
@@ -296,10 +295,6 @@ class MercadonaApp {
     });
 
     // Action buttons
-    if (this.elements.compareBtn) {
-      this.elements.compareBtn.addEventListener('click', this.toggleComparePanel.bind(this));
-    }
-
     if (this.elements.cartBtn) {
       this.elements.cartBtn.addEventListener('click', this.toggleCartPanel.bind(this));
     }
@@ -345,10 +340,6 @@ class MercadonaApp {
       this.elements.modalClose.addEventListener('click', this.closeModal.bind(this));
     }
 
-    if (this.elements.comparePanelClose) {
-      this.elements.comparePanelClose.addEventListener('click', this.closeComparePanel.bind(this));
-    }
-
     if (this.elements.cartPanelClose) {
       this.elements.cartPanelClose.addEventListener('click', this.closeCartPanel.bind(this));
     }
@@ -361,6 +352,16 @@ class MercadonaApp {
     // Clear all filters
     if (this.elements.clearAllFilters) {
       this.elements.clearAllFilters.addEventListener('click', this.clearAllFilters.bind(this));
+    }
+
+    // Mobile filters FAB
+    if (this.elements.mobileFiltersFab) {
+      this.elements.mobileFiltersFab.addEventListener('click', this.toggleMobileFilters.bind(this));
+    }
+
+    // Sidebar overlay
+    if (this.elements.sidebarOverlay) {
+      this.elements.sidebarOverlay.addEventListener('click', this.closeMobileFilters.bind(this));
     }
 
     // Global event listeners
@@ -530,6 +531,11 @@ class MercadonaApp {
     this.updateFavoritesUI();
     this.updateRecentlyViewedUI();
     this.applyCurrentFilters();
+    
+    // Initialize mobile FAB visibility
+    if (window.innerWidth < 768) {
+      this.showMobileFiltersFab();
+    }
   }
 
   /**
@@ -1020,7 +1026,6 @@ class MercadonaApp {
 
     const isFavorite = this.state.favorites.has(product.id);
     const isInCart = this.state.cart.has(product.id);
-    const isInCompare = this.state.compareList.has(product.id);
 
     const displayPrice = product.discountedPrice || product.price;
     const hasDiscount = product.discountedPrice && product.originalPrice;
@@ -1039,13 +1044,6 @@ class MercadonaApp {
             data-product-id="${product.id}"
           >
             <i class="fas fa-heart" aria-hidden="true"></i>
-          </button>
-          <button 
-            class="product-action-btn compare-btn ${isInCompare ? 'active' : ''}"
-            aria-label="${isInCompare ? 'Quitar de comparación' : 'Añadir a comparación'}"
-            data-product-id="${product.id}"
-          >
-            <i class="fas fa-balance-scale" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -1103,15 +1101,6 @@ class MercadonaApp {
       favoriteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleFavorite(product.id);
-      });
-    }
-
-    // Compare button
-    const compareBtn = card.querySelector('.compare-btn');
-    if (compareBtn) {
-      compareBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCompare(product.id);
       });
     }
 
@@ -1211,15 +1200,6 @@ class MercadonaApp {
       if (el) {
         el.textContent = cartCount;
         el.classList.toggle('visible', cartCount > 0);
-      }
-    });
-
-    // Update compare counter
-    const compareCount = this.state.compareList.size;
-    [this.elements.compareCount, document.getElementById('mobile-compare-count')].forEach(el => {
-      if (el) {
-        el.textContent = compareCount;
-        el.classList.toggle('visible', compareCount > 0);
       }
     });
   }
@@ -1432,9 +1412,6 @@ class MercadonaApp {
     this.closeMobileMenu();
     
     switch (action) {
-      case 'compare':
-        this.toggleComparePanel();
-        break;
       case 'cart':
         this.toggleCartPanel();
         break;
@@ -1580,29 +1557,6 @@ class MercadonaApp {
     this.saveSettings();
   }
 
-  /**
-   * Toggle compare
-   */
-  toggleCompare(productId) {
-    const product = this.state.products.find(p => p.id === productId);
-    if (!product) return;
-
-    if (this.state.compareList.has(productId)) {
-      this.state.compareList.delete(productId);
-      this.utils.showToast(`${product.name} eliminado de comparación`, 'info');
-    } else {
-      if (this.state.compareList.size >= 3) {
-        this.utils.showToast('Máximo 3 productos para comparar', 'warning');
-        return;
-      }
-      this.state.compareList.add(productId);
-      this.utils.showToast(`${product.name} añadido a comparación`, 'success');
-    }
-
-    this.updateCompareUI();
-    this.updateCounters();
-    this.updateProductsDisplay(); // Refresh to update button states
-  }
 
   /**
    * Update cart UI
@@ -1725,14 +1679,6 @@ class MercadonaApp {
     }
   }
 
-  /**
-   * Update compare UI
-   */
-  updateCompareUI() {
-    // Implementation for compare panel UI updates
-    // This would show products side by side for comparison
-    console.log('Compare list updated:', this.state.compareList);
-  }
 
   /**
    * Export cart to file
@@ -1813,40 +1759,6 @@ class MercadonaApp {
     document.body.style.overflow = '';
   }
 
-  /**
-   * Toggle compare panel
-   */
-  toggleComparePanel() {
-    if (!this.elements.comparePanel) return;
-
-    const isOpen = this.elements.comparePanel.classList.contains('active');
-    
-    if (isOpen) {
-      this.closeComparePanel();
-    } else {
-      this.openComparePanel();
-    }
-  }
-
-  /**
-   * Open compare panel
-   */
-  openComparePanel() {
-    if (this.elements.comparePanel) {
-      this.elements.comparePanel.classList.add('active');
-      this.elements.comparePanel.setAttribute('aria-hidden', 'false');
-    }
-  }
-
-  /**
-   * Close compare panel
-   */
-  closeComparePanel() {
-    if (this.elements.comparePanel) {
-      this.elements.comparePanel.classList.remove('active');
-      this.elements.comparePanel.setAttribute('aria-hidden', 'true');
-    }
-  }
 
   /**
    * Toggle cart panel
@@ -1896,8 +1808,6 @@ class MercadonaApp {
     if (event.key === 'Escape') {
       if (this.elements.productModal?.classList.contains('active')) {
         this.closeModal();
-      } else if (this.elements.comparePanel?.classList.contains('active')) {
-        this.closeComparePanel();
       } else if (this.elements.cartPanel?.classList.contains('active')) {
         this.closeCartPanel();
       } else if (this.elements.mobileMenu?.classList.contains('active')) {
@@ -1931,12 +1841,86 @@ class MercadonaApp {
     // Close mobile menu on desktop
     if (window.innerWidth >= 768) {
       this.closeMobileMenu();
+      this.hideMobileFiltersFab();
+    } else {
+      this.showMobileFiltersFab();
     }
 
     // Update sidebar visibility
     if (this.elements.sidebar && window.innerWidth < 768) {
       this.elements.sidebar.classList.remove('active');
     }
+  }
+
+  /**
+   * Show mobile filters FAB
+   */
+  showMobileFiltersFab() {
+    if (this.elements.mobileFiltersFab) {
+      this.elements.mobileFiltersFab.style.display = 'flex';
+    }
+  }
+
+  /**
+   * Hide mobile filters FAB
+   */
+  hideMobileFiltersFab() {
+    if (this.elements.mobileFiltersFab) {
+      this.elements.mobileFiltersFab.style.display = 'none';
+    }
+  }
+
+  /**
+   * Toggle mobile filters (opens sidebar)
+   */
+  toggleMobileFilters() {
+    const isOpen = this.elements.sidebar?.classList.contains('mobile-open');
+    
+    if (isOpen) {
+      this.closeMobileFilters();
+    } else {
+      this.openMobileFilters();
+    }
+  }
+
+  /**
+   * Open mobile filters
+   */
+  openMobileFilters() {
+    if (this.elements.sidebar) {
+      this.elements.sidebar.classList.add('mobile-open');
+    }
+    
+    if (this.elements.mobileFiltersFab) {
+      this.elements.mobileFiltersFab.classList.add('active');
+    }
+
+    if (this.elements.sidebarOverlay) {
+      this.elements.sidebarOverlay.classList.add('show');
+    }
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * Close mobile filters
+   */
+  closeMobileFilters() {
+    if (this.elements.sidebar) {
+      this.elements.sidebar.classList.remove('mobile-open');
+    }
+    
+    if (this.elements.mobileFiltersFab) {
+      this.elements.mobileFiltersFab.classList.remove('active');
+    }
+
+    if (this.elements.sidebarOverlay) {
+      this.elements.sidebarOverlay.classList.remove('show');
+    }
+
+    // Restore body scroll
+    document.body.style.overflow = '';
   }
 
   /**
