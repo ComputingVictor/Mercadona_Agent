@@ -294,12 +294,6 @@ class MercadonaApp {
       item.addEventListener('click', this.handleMobileMenuAction.bind(this));
     });
 
-    // Mobile theme toggle switch
-    const mobileThemeToggle = document.getElementById('theme-toggle-mobile');
-    if (mobileThemeToggle) {
-      mobileThemeToggle.addEventListener('change', this.toggleTheme.bind(this));
-    }
-
     // Action buttons
     if (this.elements.cartBtn) {
       this.elements.cartBtn.addEventListener('click', this.toggleCartPanel.bind(this));
@@ -1350,21 +1344,15 @@ class MercadonaApp {
     // Update mobile menu theme button
     const mobileThemeBtn = document.querySelector('[data-action="theme"]');
     if (mobileThemeBtn) {
-      const icon = mobileThemeBtn.querySelector('.mobile-menu-item-icon i');
-      const title = mobileThemeBtn.querySelector('.mobile-menu-item-title');
+      const icon = mobileThemeBtn.querySelector('i');
+      const span = mobileThemeBtn.querySelector('span');
       
       if (icon) {
         icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
       }
-      if (title) {
-        title.textContent = theme === 'dark' ? 'Tema claro' : 'Tema oscuro';
+      if (span) {
+        span.textContent = theme === 'dark' ? 'Tema claro' : 'Tema oscuro';
       }
-    }
-
-    // Update mobile theme toggle switch
-    const mobileThemeToggle = document.getElementById('theme-toggle-mobile');
-    if (mobileThemeToggle) {
-      mobileThemeToggle.checked = theme === 'dark';
     }
   }
 
@@ -1421,10 +1409,7 @@ class MercadonaApp {
   handleMobileMenuAction(event) {
     const action = event.currentTarget.dataset.action;
     
-    // Don't close menu for theme action since it uses toggle switch
-    if (action !== 'theme') {
-      this.closeMobileMenu();
-    }
+    this.closeMobileMenu();
     
     switch (action) {
       case 'cart':
@@ -1434,7 +1419,7 @@ class MercadonaApp {
         this.toggleFilters();
         break;
       case 'theme':
-        // Theme toggle is handled by the toggle switch event listener
+        this.toggleTheme();
         break;
     }
   }
