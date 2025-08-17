@@ -1,233 +1,424 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>¿Qué hay en el súper?</title>
-  <meta name="description" content="Explora productos de supermercado, compara precios y crea tu lista de compras personalizada">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
-  <link rel="icon" type="image/png" href="img/image.png" />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Agregar FontAwesome para íconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>¿Qué hay en el súper? v0.1</title>
+  <meta name="description" content="Explora productos de supermercado con una experiencia móvil optimizada. Busca, compara y organiza tu lista de compras.">
+  <meta name="keywords" content="supermercado, productos, compras, móvil, responsive">
+  
+  <!-- Preconnect to external domains for better performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  
+  <!-- Optimized font loading -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="img/image.png">
+  
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- PWA Meta tags -->
+  <meta name="theme-color" content="#22c55e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <img src="img/image.png" alt="¿Qué hay en el súper?" class="logo-super">
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Cargando productos...</p>
     </div>
-    <div class="header-center">
-      <div class="search-container">
-        <i class="fas fa-search search-icon"></i>
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="Buscar productos... (Ctrl+K)" 
-          aria-label="Buscador de productos"
-        />
-        <button id="clear-search" class="clear-search" aria-label="Borrar búsqueda" title="Borrar búsqueda">
-          <i class="fas fa-times"></i>
+  </div>
+
+  <!-- Skip to main content for accessibility -->
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+  <!-- Header with improved mobile navigation -->
+  <header class="header" role="banner">
+    <div class="header-container">
+      <!-- Logo section -->
+      <div class="header-brand">
+        <img src="img/image.png" alt="¿Qué hay en el súper?" class="logo" loading="eager">
+      </div>
+
+      <!-- Search section -->
+      <div class="header-search">
+        <form class="search-form" role="search" aria-label="Buscar productos">
+          <div class="search-input-wrapper">
+            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+            <input 
+              type="search" 
+              id="search-input" 
+              class="search-input"
+              placeholder="Buscar productos..." 
+              aria-label="Campo de búsqueda"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              role="searchbox"
+            >
+            <button 
+              type="button" 
+              id="clear-search" 
+              class="clear-search-btn"
+              aria-label="Limpiar búsqueda"
+              title="Limpiar búsqueda"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+          
+          <!-- Search suggestions dropdown -->
+          <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Sugerencias de búsqueda"></div>
+        </form>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="header-actions">
+        <!-- Desktop actions -->
+        <div class="desktop-actions">
+          <button 
+            id="cart-btn" 
+            class="action-btn" 
+            aria-label="Lista de compra"
+            title="Productos en la lista"
+          >
+            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+            <span class="badge" id="cart-count">0</span>
+          </button>
+          
+          
+          <button 
+            id="theme-toggle" 
+            class="action-btn" 
+            aria-label="Cambiar tema"
+            title="Alternar tema claro/oscuro"
+          >
+            <i class="fas fa-moon" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <!-- Mobile menu button -->
+        <button 
+          id="mobile-menu-btn" 
+          class="mobile-menu-btn"
+          aria-label="Abrir menú"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
         </button>
       </div>
-    </div>
-    <div class="header-right">
-      <!-- Botón para comprobar actualizaciones -->
-      <button id="check-updates" class="header-icon-button" aria-label="Comprobar actualizaciones" title="Comprobar actualizaciones">
-        <i class="fas fa-sync-alt"></i>
-      </button>
-
-      <!-- Nuevo botón para alternar vista -->
-      <button id="view-toggle" class="header-icon-button" aria-label="Cambiar vista" title="Cambiar vista">
-        <i class="fas fa-th-list"></i>
-      </button>
-
-      <!-- Botón para filtros -->
-      <button id="filter-toggle" class="header-icon-button" aria-label="Filtros" title="Filtros">
-        <i class="fas fa-filter"></i>
-      </button>
-
-      <!-- Botón para comparar productos -->
-      <button id="compare-products" class="header-icon-button" aria-label="Comparar productos" title="Comparar productos">
-        <i class="fas fa-balance-scale"></i>
-        <span class="compare-count"></span>
-      </button>
-
-      <!-- Botón para lista de compra -->
-      <button id="shopping-list-btn" class="header-icon-button" aria-label="Lista de compra" title="Lista de compra">
-        <i class="fas fa-shopping-cart"></i>
-        <span class="shopping-list-count"></span>
-      </button>
-
-      <!-- Botón para cambiar tema -->
-      <button id="theme-toggle" class="header-icon-button" aria-label="Cambiar tema" title="Cambiar tema">
-        <i class="fas fa-moon"></i>
-      </button>
-      
-      <a href="https://github.com/ComputingVictor" target="_blank" rel="noopener" class="username">
-        <i class="fab fa-github"></i> <span>@Computingvictor</span>
-      </a>
     </div>
   </header>
 
-  <div class="container">
-    <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Mostrar categorías">
-      <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Panel de filtros avanzados -->
-    <div id="filters-panel" class="filters-panel">
-      <div class="filters-header">
-        <h2><i class="fas fa-filter"></i> Filtros avanzados</h2>
-        <div class="filters-results">
-          <span id="filter-results-count">0</span> productos encontrados
-        </div>
-      </div>
-
-      <div class="filter-section">
-        <h3>Rango de precio</h3>
-        <div class="price-range-filter">
-          <div class="price-input">
-            <label for="price-filter-min">Min:</label>
-            <input type="number" id="price-filter-min" min="0" step="0.01" placeholder="0" />
-          </div>
-          <div class="price-input">
-            <label for="price-filter-max">Max:</label>
-            <input type="number" id="price-filter-max" min="0" step="0.01" placeholder="∞" />
-          </div>
-        </div>
-      </div>
-
-      <div class="filter-actions">
-        <button id="filter-apply" class="filter-button apply">
-          <i class="fas fa-check"></i> Aplicar filtros
+  <!-- Mobile Navigation Menu -->
+  <nav id="mobile-menu" class="mobile-menu" aria-hidden="true">
+    <div class="mobile-menu-overlay"></div>
+    <div class="mobile-menu-content">
+      <div class="mobile-menu-header">
+        <h2>Menú</h2>
+        <button 
+          id="mobile-menu-close" 
+          class="mobile-menu-close"
+          aria-label="Cerrar menú"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
-        <button id="filter-reset" class="filter-button reset">
-          <i class="fas fa-undo"></i> Resetear
+      </div>
+      
+      <div class="mobile-menu-body">
+        <button class="mobile-menu-item" data-action="cart">
+          <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+          <span>Lista de compra</span>
+          <span class="mobile-badge" id="mobile-cart-count">0</span>
+        </button>
+        
+        <button class="mobile-menu-item" data-action="filters">
+          <i class="fas fa-filter" aria-hidden="true"></i>
+          <span>Filtros y categorías</span>
+        </button>
+        
+        <button class="mobile-menu-item" data-action="theme">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+          <span>Tema oscuro</span>
         </button>
       </div>
     </div>
+  </nav>
 
-    <aside id="sidebar">
-      <h2>Categorías</h2>
-      <button id="show-all" class="show-all-button">
-        <i class="fas fa-list"></i> Todos los productos
-      </button>
-      <ul id="category-list" role="tablist"></ul>
-      
-      <!-- Sección de Novedades -->
-      <div id="new-products-section" class="new-products-section">
-        <h2>Novedades</h2>
-        <div id="new-products-container">
-          <p class="no-new-products">No hay productos nuevos disponibles</p>
-        </div>
-      </div>
-      
-      <div class="favorites-section">
-        <h2>Favoritos</h2>
-        <div id="favorites-container">
-          <p class="no-favorites">No hay favoritos guardados</p>
-        </div>
-      </div>
+  <!-- Main Application Container -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="complementary">
+      <div class="sidebar-content">
+        <!-- Categories Section -->
+        <section class="sidebar-section">
+          <h2 class="sidebar-title">
+            <i class="fas fa-tags" aria-hidden="true"></i>
+            Categorías
+          </h2>
+          
+          <button id="show-all-btn" class="category-btn category-btn--all">
+            <i class="fas fa-list" aria-hidden="true"></i>
+            <span>Todos los productos</span>
+            <span class="category-count" id="all-count">0</span>
+          </button>
+          
+          <ul id="category-list" class="category-list" role="list"></ul>
+        </section>
 
-      <!-- Sección de vistos recientemente -->
-      <div class="recently-viewed-section">
-        <h2>Vistos recientemente</h2>
-        <div id="recently-viewed-container">
-          <p class="no-recently-viewed">No hay productos vistos recientemente</p>
-        </div>
+        <!-- Filters Section -->
+        <section class="sidebar-section">
+          <div class="sidebar-section-header">
+            <h2 class="sidebar-title">
+              <i class="fas fa-filter" aria-hidden="true"></i>
+              Filtros
+            </h2>
+            <button id="filters-toggle" class="filters-toggle">
+              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </button>
+          </div>
+          
+          <div id="filters-content" class="filters-content">
+            <!-- Price Range Filter -->
+            <div class="filter-group">
+              <h3 class="filter-title">Rango de precio</h3>
+              <div class="price-range">
+                <div class="price-input-group">
+                  <label for="price-min" class="sr-only">Precio mínimo</label>
+                  <input 
+                    type="number" 
+                    id="price-min" 
+                    class="price-input"
+                    placeholder="Min €"
+                    min="0"
+                    step="0.01"
+                    aria-label="Precio mínimo"
+                  >
+                </div>
+                <span class="price-separator">-</span>
+                <div class="price-input-group">
+                  <label for="price-max" class="sr-only">Precio máximo</label>
+                  <input 
+                    type="number" 
+                    id="price-max" 
+                    class="price-input"
+                    placeholder="Max €"
+                    min="0"
+                    step="0.01"
+                    aria-label="Precio máximo"
+                  >
+                </div>
+              </div>
+              
+              <div class="filter-actions">
+                <button id="apply-filters" class="btn btn--primary btn--sm">
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                  Aplicar
+                </button>
+                <button id="reset-filters" class="btn btn--secondary btn--sm">
+                  <i class="fas fa-undo" aria-hidden="true"></i>
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Favorites Section -->
+        <section class="sidebar-section">
+          <h2 class="sidebar-title">
+            <i class="fas fa-heart" aria-hidden="true"></i>
+            Favoritos
+          </h2>
+          <div id="favorites-list" class="favorites-list">
+            <p class="empty-state">No hay favoritos guardados</p>
+          </div>
+        </section>
+
+        <!-- Recently Viewed Section -->
+        <section class="sidebar-section">
+          <h2 class="sidebar-title">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            Vistos recientemente
+          </h2>
+          <div id="recent-list" class="recent-list">
+            <p class="empty-state">No hay productos recientes</p>
+          </div>
+        </section>
       </div>
     </aside>
 
-    <main>
-      <div class="controls-top">
-        <div class="sort-options">
-          <label for="sort-select">Ordenar por:</label>
-          <select id="sort-select" aria-label="Ordenar productos">
-            <option value="name">Nombre</option>
-            <option value="price_asc">Precio (menor a mayor)</option>
-            <option value="price_desc">Precio (mayor a menor)</option>
-            <option value="popular">Popularidad</option>
-            <option value="newest">Más recientes</option>
-          </select>
+    <!-- Main Content Area -->
+    <main id="main-content" class="main-content" role="main">
+      <!-- Controls Bar -->
+      <div class="controls-bar">
+        <div class="controls-left">
+          <div class="sort-control">
+            <label for="sort-select" class="control-label">Ordenar:</label>
+            <select id="sort-select" class="sort-select" aria-label="Ordenar productos">
+              <option value="relevance">Relevancia</option>
+              <option value="name-asc">Nombre A-Z</option>
+              <option value="name-desc">Nombre Z-A</option>
+              <option value="price-asc">Precio: menor a mayor</option>
+              <option value="price-desc">Precio: mayor a menor</option>
+            </select>
+          </div>
         </div>
         
-        <div class="pagination-top">
-          <label for="items-per-page">Productos por página:</label>
-          <select id="items-per-page" aria-label="Productos por página">
-            <option value="20">20</option>
-            <option value="40">40</option>
-            <option value="60">60</option>
-            <option value="80">80</option>
-            <option value="100">100</option>
-          </select>
+        <div class="controls-right">
+          <div class="pagination-control">
+            <label for="items-per-page" class="control-label">Por página:</label>
+            <select id="items-per-page" class="items-select" aria-label="Productos por página">
+              <option value="12">12</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+          </div>
+          
+          <div class="results-info">
+            <span id="results-count" class="results-count">0 productos</span>
+          </div>
         </div>
       </div>
 
-      <div id="pagination-controls-top" class="pagination-controls">
-        <button id="prev-page-top" aria-label="Página anterior">
-          <i class="fas fa-chevron-left"></i> Anterior
-        </button>
-        <span id="page-info-top"></span>
-        <button id="next-page-top" aria-label="Página siguiente">
-          Siguiente <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
+      <!-- Products Grid -->
+      <div class="products-container">
+        <!-- Pagination Top -->
+        <nav class="pagination pagination--top" aria-label="Navegación de páginas">
+          <button id="prev-page" class="pagination-btn pagination-btn--prev" disabled>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            <span class="btn-text">Anterior</span>
+          </button>
+          
+          <div class="pagination-info">
+            <span id="page-info" class="page-info">Página 1 de 1</span>
+          </div>
+          
+          <button id="next-page" class="pagination-btn pagination-btn--next" disabled>
+            <span class="btn-text">Siguiente</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </nav>
 
-      <div id="product-container" class="product-grid"></div>
+        <!-- Products Grid -->
+        <div id="products-grid" class="products-grid" role="grid" aria-label="Lista de productos">
+          <!-- Products will be loaded here -->
+        </div>
 
-      <div id="pagination-controls-bottom" class="pagination-controls">
-        <button id="prev-page-bottom" aria-label="Página anterior">
-          <i class="fas fa-chevron-left"></i> Anterior
-        </button>
-        <span id="page-info-bottom"></span>
-        <button id="next-page-bottom" aria-label="Página siguiente">
-          Siguiente <i class="fas fa-chevron-right"></i>
-        </button>
+        <!-- Pagination Bottom -->
+        <nav class="pagination pagination--bottom" aria-label="Navegación de páginas">
+          <button id="prev-page-bottom" class="pagination-btn pagination-btn--prev" disabled>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            <span class="btn-text">Anterior</span>
+          </button>
+          
+          <div class="pagination-info">
+            <span id="page-info-bottom" class="page-info">Página 1 de 1</span>
+          </div>
+          
+          <button id="next-page-bottom" class="pagination-btn pagination-btn--next" disabled>
+            <span class="btn-text">Siguiente</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </nav>
+
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="loading-indicator hidden">
+          <div class="loading-spinner-small">
+            <div class="spinner-small"></div>
+          </div>
+          <span>Cargando productos...</span>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state-container hidden">
+          <div class="empty-state-content">
+            <i class="fas fa-search empty-state-icon" aria-hidden="true"></i>
+            <h3>No se encontraron productos</h3>
+            <p>Intenta ajustar los filtros o términos de búsqueda</p>
+            <button id="clear-all-filters" class="btn btn--primary">
+              <i class="fas fa-undo" aria-hidden="true"></i>
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 
-  <!-- Modal para visualizar información nutricional -->
-  <div id="modal" class="modal" aria-hidden="true" role="dialog">
-    <div class="modal-content-wrapper">
-      <span id="modal-close" class="modal-close" aria-label="Cerrar">&times;</span>
-      <img id="modal-img" class="modal-content" alt="Información nutricional">
+  <!-- Modals and Panels -->
+  
+  <!-- Product Detail Modal -->
+  <div id="product-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">Información del producto</h2>
+        <button id="modal-close" class="modal-close" aria-label="Cerrar modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-content-body" class="modal-content-body">
+          <!-- Product details will be loaded here -->
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Panel de comparación de productos -->
-  <div id="compare-panel" class="side-panel">
-    <div class="panel-header">
-      <h2><i class="fas fa-balance-scale"></i> Comparar productos</h2>
-      <button id="compare-panel-close" class="panel-close" aria-label="Cerrar panel">
-        <i class="fas fa-times"></i>
+  <!-- Shopping Cart Panel -->
+  <div id="cart-panel" class="side-panel" aria-hidden="true">
+    <div class="side-panel-header">
+      <h2>
+        <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+        Lista de compra
+      </h2>
+      <button id="cart-panel-close" class="side-panel-close" aria-label="Cerrar panel">
+        <i class="fas fa-times" aria-hidden="true"></i>
       </button>
     </div>
-    <div id="compare-list" class="panel-content">
-      <p class="no-compare">Selecciona productos para comparar (máximo 3)</p>
+    <div class="side-panel-body">
+      <div id="cart-list" class="cart-list">
+        <p class="empty-state">Tu lista de compra está vacía</p>
+      </div>
     </div>
-  </div>
-
-  <!-- Panel de lista de compra -->
-  <div id="shopping-list-panel" class="side-panel">
-    <div class="panel-header">
-      <h2><i class="fas fa-shopping-cart"></i> Lista de la compra</h2>
-      <button id="shopping-list-close" class="panel-close" aria-label="Cerrar panel">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div id="shopping-list-container" class="panel-content">
-      <p class="no-shopping-list">Tu lista de la compra está vacía</p>
-    </div>
-    <div class="panel-footer">
-      <div id="shopping-list-total" class="shopping-list-total">Total: 0,00 €</div>
-      <button id="export-list-btn" class="export-list-btn">
-        <i class="fas fa-download"></i> Exportar lista
+    <div class="side-panel-footer">
+      <div class="cart-total">
+        <strong>Total: <span id="cart-total-amount">0,00 €</span></strong>
+      </div>
+      <button id="export-cart" class="btn btn--primary btn--full">
+        <i class="fas fa-download" aria-hidden="true"></i>
+        Exportar lista
       </button>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <script src="script.js"></script>
+  <!-- Mobile Filters FAB -->
+  <button id="mobile-filters-fab" class="mobile-filters-fab" aria-label="Abrir filtros y categorías" style="display: none;">
+    <i class="fas fa-filter" aria-hidden="true"></i>
+  </button>
+
+  <!-- Sidebar Overlay for Mobile -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
