@@ -34,7 +34,6 @@ class MercadonaApp {
       currentPage: 1,
       itemsPerPage: 24,
       totalPages: 0,
-      currentView: 'grid',
       currentSort: 'relevance',
       searchQuery: '',
       activeCategory: null,
@@ -78,7 +77,6 @@ class MercadonaApp {
 
     this.SETTINGS_DEFAULTS = {
       itemsPerPage: 24,
-      currentView: 'grid',
       theme: 'light'
     };
 
@@ -129,7 +127,6 @@ class MercadonaApp {
       mobileMenuOverlay: '.mobile-menu-overlay',
       
       // Action buttons
-      viewToggle: '#view-toggle',
       compareBtn: '#compare-btn',
       cartBtn: '#cart-btn',
       compareCount: '#compare-count',
@@ -208,7 +205,6 @@ class MercadonaApp {
       
       // Apply settings to state
       this.state.itemsPerPage = settings.itemsPerPage || this.SETTINGS_DEFAULTS.itemsPerPage;
-      this.state.currentView = settings.currentView || this.SETTINGS_DEFAULTS.currentView;
       
       // Load favorites
       const savedFavorites = localStorage.getItem(this.STORAGE_KEYS.FAVORITES);
@@ -248,7 +244,6 @@ class MercadonaApp {
     try {
       const settings = {
         itemsPerPage: this.state.itemsPerPage,
-        currentView: this.state.currentView,
         theme: document.documentElement.getAttribute('data-theme') || 'light'
       };
       
@@ -301,10 +296,6 @@ class MercadonaApp {
     });
 
     // Action buttons
-    if (this.elements.viewToggle) {
-      this.elements.viewToggle.addEventListener('click', this.toggleView.bind(this));
-    }
-
     if (this.elements.compareBtn) {
       this.elements.compareBtn.addEventListener('click', this.toggleComparePanel.bind(this));
     }
@@ -533,7 +524,6 @@ class MercadonaApp {
    */
   initializeUI() {
     this.updateCategoriesUI();
-    this.updateViewToggle();
     this.updateItemsPerPageSelect();
     this.updateSortSelect();
     this.updateCounters();
@@ -1024,7 +1014,7 @@ class MercadonaApp {
    */
   createProductCard(product) {
     const card = document.createElement('div');
-    card.className = `product-card ${this.state.currentView}-view`;
+    card.className = 'product-card';
     card.setAttribute('role', 'gridcell');
     card.setAttribute('tabindex', '0');
 
@@ -1188,21 +1178,6 @@ class MercadonaApp {
     }
   }
 
-  /**
-   * Update view toggle button
-   */
-  updateViewToggle() {
-    if (this.elements.viewToggle) {
-      const icon = this.elements.viewToggle.querySelector('i');
-      if (icon) {
-        icon.className = this.state.currentView === 'grid' ? 'fas fa-th-list' : 'fas fa-th-large';
-      }
-    }
-
-    // Update body class for CSS styling
-    document.body.className = document.body.className.replace(/\b\w+-view\b/g, '');
-    document.body.classList.add(`${this.state.currentView}-view`);
-  }
 
   /**
    * Update items per page select
@@ -1366,20 +1341,6 @@ class MercadonaApp {
     }
   }
 
-  /**
-   * Toggle view (grid/list)
-   */
-  toggleView() {
-    this.state.currentView = this.state.currentView === 'grid' ? 'list' : 'grid';
-    this.updateViewToggle();
-    this.updateProductsDisplay();
-    this.saveSettings();
-    
-    this.utils.showToast(
-      `Vista cambiada a ${this.state.currentView === 'grid' ? 'cuadrícula' : 'lista'}`,
-      'info'
-    );
-  }
 
   /**
    * Toggle theme
@@ -1471,9 +1432,6 @@ class MercadonaApp {
     this.closeMobileMenu();
     
     switch (action) {
-      case 'view-toggle':
-        this.toggleView();
-        break;
       case 'compare':
         this.toggleComparePanel();
         break;

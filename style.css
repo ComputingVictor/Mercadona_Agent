@@ -768,8 +768,11 @@ body {
   width: var(--sidebar-width);
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
+  height: calc(100vh - var(--header-height));
   overflow-y: auto;
   transition: transform var(--transition-normal);
+  position: sticky;
+  top: var(--header-height);
 }
 
 .sidebar-content {
@@ -891,6 +894,8 @@ body {
 
 .category-list {
   list-style: none;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .category-list li {
@@ -1140,7 +1145,7 @@ body {
 /* Products Grid */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
@@ -1739,7 +1744,7 @@ body {
   
   /* Products grid mobile */
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-3);
   }
   
@@ -1788,14 +1793,14 @@ body {
   }
   
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* Desktop optimizations */
 @media (min-width: 1024px) {
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
   }
   
   /* Enhanced hover states for desktop */
