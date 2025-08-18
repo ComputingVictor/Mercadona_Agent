@@ -26,6 +26,14 @@
   <meta name="theme-color" content="#22c55e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Súper App">
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="152x152" href="img/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180x180.png">
 </head>
 <body>
   <!-- Loading Screen -->
@@ -38,6 +46,10 @@
 
   <!-- Skip to main content for accessibility -->
   <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+  
+  <!-- Screen reader announcements -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <div id="sr-status" class="sr-only" aria-live="polite" aria-atomic="false"></div>
 
   <!-- Header with improved mobile navigation -->
   <header class="header" role="banner">
@@ -152,6 +164,11 @@
         <button class="mobile-menu-item" data-action="theme">
           <i class="fas fa-moon" aria-hidden="true"></i>
           <span>Tema oscuro</span>
+        </button>
+        
+        <button class="mobile-menu-item" data-action="auto-theme">
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          <span>Tema automático</span>
         </button>
       </div>
     </div>

@@ -76,7 +76,12 @@ class MercadonaApp {
 
     this.SETTINGS_DEFAULTS = {
       itemsPerPage: 24,
-      theme: 'light'
+      theme: 'light',
+      autoTheme: false,
+      themeSchedule: {
+        darkStart: '20:00',
+        lightStart: '07:00'
+      }
     };
 
     // Initialize app
@@ -94,6 +99,13 @@ class MercadonaApp {
       this.attachEventListeners();
       await this.loadData();
       this.initializeUI();
+      
+      // Register service worker for PWA functionality
+      await this.registerServiceWorker();
+      
+      // Handle PWA shortcuts
+      this.handlePWAShortcuts();
+      
       this.showLoadingScreen(false);
       this.state.initialized = true;
       console.log('🚀 Mercadona App v2.0 initialized successfully');
@@ -192,6 +204,10 @@ class MercadonaApp {
 
     // Cache mobile menu items with data attributes
     this.elements.mobileMenuItems = document.querySelectorAll('.mobile-menu-item[data-action]');
+    
+    // Cache accessibility elements
+    this.elements.srAnnouncements = document.getElementById('sr-announcements');
+    this.elements.srStatus = document.getElementById('sr-status');
   }
 
   /**
@@ -224,10 +240,21 @@ class MercadonaApp {
         this.state.recentlyViewed = JSON.parse(savedRecent);
       }
       
+      // Load auto theme preference
+      this.state.autoTheme = settings.autoTheme || this.SETTINGS_DEFAULTS.autoTheme;
+      this.state.themeSchedule = settings.themeSchedule || this.SETTINGS_DEFAULTS.themeSchedule;
+
       // Load and apply theme
       const savedTheme = localStorage.getItem(this.STORAGE_KEYS.THEME);
       const theme = savedTheme || settings.theme || this.SETTINGS_DEFAULTS.theme;
-      this.setTheme(theme);
+      
+      // Apply automatic theme if enabled
+      if (this.state.autoTheme) {
+        this.applyAutomaticTheme();
+        this.startAutoThemeScheduler();
+      } else {
+        this.setTheme(theme);
+      }
       
     } catch (error) {
       console.error('❌ Error loading settings:', error);
@@ -243,7 +270,9 @@ class MercadonaApp {
     try {
       const settings = {
         itemsPerPage: this.state.itemsPerPage,
-        theme: document.documentElement.getAttribute('data-theme') || 'light'
+        theme: document.documentElement.getAttribute('data-theme') || 'light',
+        autoTheme: this.state.autoTheme || false,
+        themeSchedule: this.state.themeSchedule || this.SETTINGS_DEFAULTS.themeSchedule
       };
       
       localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
@@ -367,6 +396,13 @@ class MercadonaApp {
     // Global event listeners
     window.addEventListener('resize', this.handlers.resize);
     window.addEventListener('scroll', this.handlers.scroll);
+    
+    // PWA install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      console.log('💾 PWA install prompt ready');
+    });
     
     // Keyboard navigation
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -531,6 +567,19 @@ class MercadonaApp {
     this.updateFavoritesUI();
     this.updateRecentlyViewedUI();
     this.applyCurrentFilters();
+    
+    // Initialize accessibility features
+    this.enhanceKeyboardNavigation();
+    this.updateAriaLabels();
+    
+    // Initialize PWA features
+    this.handleNetworkStatus();
+    
+    // Initialize touch gestures for mobile
+    if ('ontouchstart' in window) {
+      this.initTouchGestures();
+      this.attachLongPressGestures();
+    }
     
     // Initialize mobile FAB visibility
     if (window.innerWidth < 768) {
@@ -804,6 +853,8 @@ class MercadonaApp {
     this.updatePagination();
     this.updateResultsCount();
     this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.updateAriaLabels();
   }
 
   /**
@@ -1357,6 +1408,91 @@ class MercadonaApp {
   }
 
   /**
+   * Apply automatic theme based on time
+   */
+  applyAutomaticTheme() {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Convert to minutes
+    
+    const darkStart = this.parseTime(this.state.themeSchedule.darkStart);
+    const lightStart = this.parseTime(this.state.themeSchedule.lightStart);
+    
+    let shouldBeDark = false;
+    
+    if (darkStart > lightStart) {
+      // Dark period spans midnight (e.g., 20:00 to 07:00)
+      shouldBeDark = currentTime >= darkStart || currentTime < lightStart;
+    } else {
+      // Dark period within same day (e.g., 07:00 to 20:00 - unusual but supported)
+      shouldBeDark = currentTime >= darkStart && currentTime < lightStart;
+    }
+    
+    const newTheme = shouldBeDark ? 'dark' : 'light';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    
+    if (newTheme !== currentTheme) {
+      this.setTheme(newTheme);
+      console.log(`🌓 Auto theme changed to: ${newTheme}`);
+    }
+  }
+
+  /**
+   * Parse time string to minutes
+   */
+  parseTime(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  /**
+   * Start automatic theme scheduler
+   */
+  startAutoThemeScheduler() {
+    // Clear existing interval if any
+    if (this.autoThemeInterval) {
+      clearInterval(this.autoThemeInterval);
+    }
+    
+    // Check theme every minute
+    this.autoThemeInterval = setInterval(() => {
+      if (this.state.autoTheme) {
+        this.applyAutomaticTheme();
+      }
+    }, 60000);
+    
+    console.log('🕒 Auto theme scheduler started');
+  }
+
+  /**
+   * Stop automatic theme scheduler
+   */
+  stopAutoThemeScheduler() {
+    if (this.autoThemeInterval) {
+      clearInterval(this.autoThemeInterval);
+      this.autoThemeInterval = null;
+      console.log('🕒 Auto theme scheduler stopped');
+    }
+  }
+
+  /**
+   * Toggle automatic theme
+   */
+  toggleAutoTheme() {
+    this.state.autoTheme = !this.state.autoTheme;
+    
+    if (this.state.autoTheme) {
+      this.applyAutomaticTheme();
+      this.startAutoThemeScheduler();
+      this.utils.showToast('Tema automático activado', 'success');
+    } else {
+      this.stopAutoThemeScheduler();
+      this.utils.showToast('Tema automático desactivado', 'info');
+    }
+    
+    this.saveSettings();
+  }
+
+  /**
    * Toggle mobile menu
    */
   toggleMobileMenu() {
@@ -1420,6 +1556,9 @@ class MercadonaApp {
         break;
       case 'theme':
         this.toggleTheme();
+        break;
+      case 'auto-theme':
+        this.toggleAutoTheme();
         break;
     }
   }
@@ -1928,6 +2067,556 @@ class MercadonaApp {
    */
   handleScroll() {
     // Scroll handling for future features
+  }
+
+  // =====================================================
+  // PWA FUNCTIONALITY
+  // =====================================================
+
+  /**
+   * Register service worker
+   */
+  async registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('🔧 Service Worker registered:', registration);
+        
+        // Handle service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              this.showUpdateAvailable();
+            }
+          });
+        });
+
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SYNC_COMPLETE') {
+            this.utils.showToast('Datos sincronizados', 'success');
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ Service Worker registration failed:', error);
+      }
+    }
+  }
+
+  /**
+   * Show update available notification
+   */
+  showUpdateAvailable() {
+    const updateBanner = document.createElement('div');
+    updateBanner.className = 'update-banner';
+    updateBanner.innerHTML = `
+      <div class="update-content">
+        <span>Nueva versión disponible</span>
+        <button class="update-btn" onclick="window.mercadonaApp.updateApp()">Actualizar</button>
+      </div>
+    `;
+    document.body.appendChild(updateBanner);
+  }
+
+  /**
+   * Update app with new service worker
+   */
+  updateApp() {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      window.location.reload();
+    }
+  }
+
+  /**
+   * Handle PWA shortcuts from manifest
+   */
+  handlePWAShortcuts() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+
+    switch (action) {
+      case 'cart':
+        setTimeout(() => this.openCartPanel(), 500);
+        break;
+      case 'favorites':
+        // Focus on favorites section in sidebar
+        setTimeout(() => {
+          if (this.elements.favoritesList) {
+            this.elements.favoritesList.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+        break;
+    }
+  }
+
+  /**
+   * Check if app is running as PWA
+   */
+  isPWA() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  /**
+   * Show install prompt for PWA
+   */
+  showInstallPrompt() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      this.deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('✅ PWA install accepted');
+        } else {
+          console.log('❌ PWA install declined');
+        }
+        this.deferredPrompt = null;
+      });
+    }
+  }
+
+  /**
+   * Handle offline/online status
+   */
+  handleNetworkStatus() {
+    const updateNetworkStatus = () => {
+      if (navigator.onLine) {
+        this.utils.showToast('Conexión restaurada', 'success');
+        document.body.classList.remove('offline');
+      } else {
+        this.utils.showToast('Modo offline activo', 'warning');
+        document.body.classList.add('offline');
+      }
+    };
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    
+    // Initial status
+    if (!navigator.onLine) {
+      document.body.classList.add('offline');
+    }
+  }
+
+  // =====================================================
+  // TOUCH GESTURES
+  // =====================================================
+
+  /**
+   * Initialize touch gestures
+   */
+  initTouchGestures() {
+    // Add touch gesture support to product cards
+    this.attachProductCardGestures();
+    
+    // Add swipe gestures for navigation
+    this.attachSwipeGestures();
+    
+    // Add pull-to-refresh
+    this.attachPullToRefresh();
+  }
+
+  /**
+   * Attach gestures to product cards
+   */
+  attachProductCardGestures() {
+    let touchStartX, touchStartY, touchStartTime;
+    let isSwipe = false;
+
+    document.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.product-card')) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = Date.now();
+        isSwipe = false;
+      }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (e.target.closest('.product-card') && touchStartX !== undefined) {
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        const deltaY = Math.abs(touch.clientY - touchStartY);
+        
+        // If horizontal movement is significant, it's likely a swipe
+        if (deltaX > 30 && deltaX > deltaY) {
+          isSwipe = true;
+        }
+      }
+    });
+
+    document.addEventListener('touchend', (e) => {
+      const card = e.target.closest('.product-card');
+      if (card && touchStartX !== undefined) {
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (isSwipe && Math.abs(deltaX) > 50 && deltaTime < 500) {
+          // Swipe gesture detected
+          e.preventDefault();
+          const productId = card.querySelector('[data-product-id]')?.dataset.productId;
+          
+          if (deltaX > 0) {
+            // Swipe right - add to favorites
+            this.toggleFavorite(productId);
+            this.showSwipeFeedback(card, 'favorite');
+          } else {
+            // Swipe left - add to cart
+            this.toggleCart(productId);
+            this.showSwipeFeedback(card, 'cart');
+          }
+        }
+        
+        // Reset
+        touchStartX = undefined;
+        touchStartY = undefined;
+        isSwipe = false;
+      }
+    });
+  }
+
+  /**
+   * Show swipe feedback animation
+   */
+  showSwipeFeedback(card, action) {
+    const feedback = document.createElement('div');
+    feedback.className = `swipe-feedback swipe-feedback--${action}`;
+    feedback.innerHTML = action === 'favorite' 
+      ? '<i class="fas fa-heart"></i>' 
+      : '<i class="fas fa-shopping-cart"></i>';
+    
+    card.appendChild(feedback);
+    
+    // Remove feedback after animation
+    setTimeout(() => {
+      if (feedback.parentNode) {
+        feedback.parentNode.removeChild(feedback);
+      }
+    }, 1000);
+  }
+
+  /**
+   * Attach swipe gestures for navigation
+   */
+  attachSwipeGestures() {
+    let touchStartX, touchStartY;
+    
+    document.addEventListener('touchstart', (e) => {
+      // Only on main content area
+      if (e.target.closest('.main-content')) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+    });
+
+    document.addEventListener('touchend', (e) => {
+      if (touchStartX !== undefined && e.target.closest('.main-content')) {
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        
+        // Only if horizontal swipe is dominant
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+          if (deltaX > 0 && this.state.currentPage > 1) {
+            // Swipe right - previous page
+            this.changePage(this.state.currentPage - 1);
+          } else if (deltaX < 0 && this.state.currentPage < this.state.totalPages) {
+            // Swipe left - next page
+            this.changePage(this.state.currentPage + 1);
+          }
+        }
+        
+        touchStartX = undefined;
+        touchStartY = undefined;
+      }
+    });
+  }
+
+  /**
+   * Attach pull-to-refresh gesture
+   */
+  attachPullToRefresh() {
+    let startY = 0;
+    let currentY = 0;
+    let pullDistance = 0;
+    let isPulling = false;
+    let refreshTriggered = false;
+
+    const threshold = 100; // Distance to trigger refresh
+    const container = document.body;
+
+    container.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+        isPulling = true;
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (isPulling && window.scrollY === 0) {
+        currentY = e.touches[0].clientY;
+        pullDistance = Math.max(0, currentY - startY);
+        
+        if (pullDistance > 10) {
+          e.preventDefault(); // Prevent default scroll
+          
+          // Visual feedback
+          const pullIndicator = document.querySelector('.pull-indicator') || this.createPullIndicator();
+          pullIndicator.style.transform = `translateY(${Math.min(pullDistance, threshold)}px)`;
+          pullIndicator.style.opacity = Math.min(pullDistance / threshold, 1);
+          
+          if (pullDistance >= threshold && !refreshTriggered) {
+            pullIndicator.classList.add('ready');
+            this.vibrate(50); // Haptic feedback
+          } else {
+            pullIndicator.classList.remove('ready');
+          }
+        }
+      }
+    });
+
+    container.addEventListener('touchend', () => {
+      if (isPulling && pullDistance >= threshold && !refreshTriggered) {
+        refreshTriggered = true;
+        this.triggerRefresh();
+      }
+      
+      // Reset
+      isPulling = false;
+      pullDistance = 0;
+      refreshTriggered = false;
+      
+      const pullIndicator = document.querySelector('.pull-indicator');
+      if (pullIndicator) {
+        pullIndicator.style.transform = 'translateY(-100%)';
+        pullIndicator.style.opacity = '0';
+      }
+    });
+  }
+
+  /**
+   * Create pull-to-refresh indicator
+   */
+  createPullIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'pull-indicator';
+    indicator.innerHTML = `
+      <div class="pull-icon">
+        <i class="fas fa-arrow-down"></i>
+      </div>
+      <span>Desliza para actualizar</span>
+    `;
+    document.body.appendChild(indicator);
+    return indicator;
+  }
+
+  /**
+   * Trigger refresh action
+   */
+  async triggerRefresh() {
+    try {
+      this.utils.showToast('Actualizando productos...', 'info');
+      await this.loadData();
+      this.utils.showToast('Productos actualizados', 'success');
+    } catch (error) {
+      this.utils.showToast('Error al actualizar', 'error');
+    }
+  }
+
+  /**
+   * Trigger haptic feedback
+   */
+  vibrate(duration = 50) {
+    if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  }
+
+  /**
+   * Add long press gesture support
+   */
+  attachLongPressGestures() {
+    let pressTimer;
+    
+    document.addEventListener('touchstart', (e) => {
+      const productCard = e.target.closest('.product-card');
+      if (productCard) {
+        pressTimer = setTimeout(() => {
+          // Long press detected
+          this.vibrate(100);
+          const productId = productCard.querySelector('[data-product-id]')?.dataset.productId;
+          const product = this.state.products.find(p => p.id === productId);
+          
+          if (product) {
+            this.showProductQuickActions(product, e.touches[0]);
+          }
+        }, 500);
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+
+    document.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+    });
+  }
+
+  /**
+   * Show quick actions menu for long press
+   */
+  showProductQuickActions(product, touch) {
+    const menu = document.createElement('div');
+    menu.className = 'quick-actions-menu';
+    menu.style.left = `${touch.clientX - 50}px`;
+    menu.style.top = `${touch.clientY - 100}px`;
+    
+    const isFavorite = this.state.favorites.has(product.id);
+    const isInCart = this.state.cart.has(product.id);
+    
+    menu.innerHTML = `
+      <button class="quick-action" data-action="favorite">
+        <i class="fas fa-heart ${isFavorite ? 'active' : ''}"></i>
+        ${isFavorite ? 'Quitar favorito' : 'Favorito'}
+      </button>
+      <button class="quick-action" data-action="cart">
+        <i class="fas fa-shopping-cart"></i>
+        ${isInCart ? 'Quitar carrito' : 'Al carrito'}
+      </button>
+      <button class="quick-action" data-action="view">
+        <i class="fas fa-eye"></i>
+        Ver detalles
+      </button>
+    `;
+    
+    // Add event listeners
+    menu.addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      
+      switch (action) {
+        case 'favorite':
+          this.toggleFavorite(product.id);
+          break;
+        case 'cart':
+          this.toggleCart(product.id);
+          break;
+        case 'view':
+          this.viewProductDetails(product);
+          break;
+      }
+      
+      document.body.removeChild(menu);
+    });
+    
+    document.body.appendChild(menu);
+    
+    // Remove menu after 3 seconds or on touch outside
+    setTimeout(() => {
+      if (menu.parentNode) {
+        document.body.removeChild(menu);
+      }
+    }, 3000);
+  }
+
+  // =====================================================
+  // ACCESSIBILITY FUNCTIONS
+  // =====================================================
+
+  /**
+   * Announce message to screen readers
+   */
+  announceToScreenReader(message, priority = 'polite') {
+    const element = priority === 'assertive' ? this.elements.srStatus : this.elements.srAnnouncements;
+    if (element) {
+      element.textContent = message;
+      
+      // Clear after announcement to allow repeated messages
+      setTimeout(() => {
+        element.textContent = '';
+      }, 1000);
+    }
+  }
+
+  /**
+   * Update ARIA live region with current results
+   */
+  updateAriaLiveRegion() {
+    const count = this.state.filteredProducts.length;
+    const message = count === 1 
+      ? `Se encontró 1 producto` 
+      : `Se encontraron ${count} productos`;
+    
+    this.announceToScreenReader(message);
+  }
+
+  /**
+   * Improve keyboard navigation for product cards
+   */
+  enhanceKeyboardNavigation() {
+    // Handle arrow key navigation in product grid
+    document.addEventListener('keydown', (e) => {
+      if (e.target.classList.contains('product-card')) {
+        const cards = Array.from(document.querySelectorAll('.product-card'));
+        const currentIndex = cards.indexOf(e.target);
+        let nextCard = null;
+
+        switch (e.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            nextCard = cards[currentIndex + 1];
+            break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            nextCard = cards[currentIndex - 1];
+            break;
+          case 'Home':
+            nextCard = cards[0];
+            break;
+          case 'End':
+            nextCard = cards[cards.length - 1];
+            break;
+        }
+
+        if (nextCard) {
+          e.preventDefault();
+          nextCard.focus();
+        }
+      }
+    });
+  }
+
+  /**
+   * Add ARIA labels to dynamic content
+   */
+  updateAriaLabels() {
+    // Update cart count aria labels
+    const cartElements = [this.elements.cartBtn, document.querySelector('[data-action="cart"]')];
+    cartElements.forEach(el => {
+      if (el) {
+        const count = this.state.cart.size;
+        el.setAttribute('aria-label', 
+          count === 0 
+            ? 'Lista de compra vacía' 
+            : `Lista de compra con ${count} ${count === 1 ? 'producto' : 'productos'}`
+        );
+      }
+    });
+
+    // Update pagination aria labels
+    if (this.elements.pageInfo) {
+      const pageText = this.state.totalPages > 0 
+        ? `Página ${this.state.currentPage} de ${this.state.totalPages}`
+        : 'Sin resultados';
+      this.elements.pageInfo.setAttribute('aria-label', pageText);
+    }
   }
 
   // =====================================================

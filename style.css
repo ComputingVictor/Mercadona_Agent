@@ -8,6 +8,265 @@ Last Updated: 2025
 ================================================================================
 */
 
+/* ACCESSIBILITY UTILITIES */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  z-index: 9999;
+  transition: top 0.3s ease;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: var(--color-black);
+    --text-secondary: var(--color-black);
+    --bg-secondary: var(--color-white);
+  }
+  
+  [data-theme="dark"] {
+    --border-color: var(--color-white);
+    --text-secondary: var(--color-white);
+    --bg-secondary: var(--color-black);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* PWA Update Banner */
+.update-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--space-3);
+  z-index: 9999;
+  animation: slideDown 0.3s ease-out;
+}
+
+.update-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.update-btn {
+  background: var(--color-white);
+  color: var(--color-primary);
+  border: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-btn:hover {
+  background: var(--color-gray-100);
+}
+
+/* Offline indicator */
+.offline::before {
+  content: "Sin conexión - Modo offline";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-warning);
+  color: var(--color-white);
+  padding: var(--space-2);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  z-index: 9998;
+}
+
+.offline .app-container {
+  margin-top: 40px;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Touch Gestures Styles */
+.pull-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--space-3) var(--space-6);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.pull-indicator.ready {
+  background: var(--color-success);
+}
+
+.pull-indicator.ready .pull-icon {
+  transform: rotate(180deg);
+}
+
+.pull-icon {
+  transition: transform 0.3s ease;
+}
+
+.swipe-feedback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  font-size: var(--font-size-xl);
+  z-index: 10;
+  animation: swipeFeedbackAnimation 1s ease-out forwards;
+  pointer-events: none;
+}
+
+.swipe-feedback--favorite {
+  background: var(--color-danger);
+}
+
+.swipe-feedback--cart {
+  background: var(--color-primary);
+}
+
+@keyframes swipeFeedbackAnimation {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.quick-actions-menu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  overflow: hidden;
+  animation: quickMenuAppear 0.2s ease-out;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.quick-action:hover {
+  background: var(--bg-secondary);
+}
+
+.quick-action i.active {
+  color: var(--color-danger);
+}
+
+@keyframes quickMenuAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced touch targets for mobile */
+@media (max-width: 768px) {
+  .product-card {
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  
+  .product-action-btn,
+  .product-card-cart-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Touch feedback */
+  .product-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
 /* CSS CUSTOM PROPERTIES (CSS Variables) */
 :root {
   /* Color Palette - Light Theme */
