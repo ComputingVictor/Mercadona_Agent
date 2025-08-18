@@ -1612,16 +1612,6 @@ class MercadonaApp {
                   `<div class="discount-badge">¡Oferta!</div>` : ''}
               </div>
               
-              <div class="product-detail-features">
-                <div class="feature-item">
-                  <i class="fas fa-truck" aria-hidden="true"></i>
-                  <span>Entrega disponible</span>
-                </div>
-                <div class="feature-item">
-                  <i class="fas fa-shield-alt" aria-hidden="true"></i>
-                  <span>Calidad garantizada</span>
-                </div>
-              </div>
             </div>
             
             <div class="product-detail-actions">

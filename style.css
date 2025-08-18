@@ -2018,16 +2018,16 @@ body {
 }
 
 .product-detail-actions .btn--primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
-  color: white;
+  background: #007bff;
+  color: white !important;
   border: none;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .product-detail-actions .btn--primary:hover {
-  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+  background: #0056b3;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .product-detail-actions .btn--secondary {
