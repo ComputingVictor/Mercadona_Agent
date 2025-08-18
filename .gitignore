@@ -9,8 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-# Documents
-notebooks/new_notebook.ipynb
+
 
 # Pictures
 *.jpg
