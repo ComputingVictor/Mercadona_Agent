@@ -1586,27 +1586,54 @@ class MercadonaApp {
     // Create modal content
     const modalContent = `
       <div class="product-detail">
-        <div class="product-detail-image">
-          <img src="${product.image}" alt="${product.name}">
+        <div class="product-detail-header">
+          <div class="product-detail-category-badge">${product.category}</div>
         </div>
-        <div class="product-detail-info">
-          <div class="product-detail-category">${product.category}</div>
-          <h3 class="product-detail-title">${product.name}</h3>
-          ${product.subtitle ? `<p class="product-detail-subtitle">${product.subtitle}</p>` : ''}
-          <div class="product-detail-price">
-            <span class="price-current">${this.utils.formatCurrency(product.discountedPrice || product.price)}</span>
-            ${product.discountedPrice && product.originalPrice ? 
-              `<span class="price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+        
+        <div class="product-detail-main">
+          <div class="product-detail-image-section">
+            <div class="product-detail-image-container">
+              <img src="${product.image}" alt="${product.name}" class="product-detail-image">
+            </div>
           </div>
-          <div class="product-detail-actions">
-            <button class="btn btn--primary product-detail-cart-btn" data-product-id="${product.id}">
-              <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}" aria-hidden="true"></i>
-              ${this.state.cart.has(product.id) ? 'En el carrito' : 'Añadir al carrito'}
-            </button>
-            <button class="btn btn--secondary product-detail-favorite-btn" data-product-id="${product.id}">
-              <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}" aria-hidden="true"></i>
-              ${this.state.favorites.has(product.id) ? 'Quitar favorito' : 'Añadir favorito'}
-            </button>
+          
+          <div class="product-detail-info-section">
+            <div class="product-detail-content">
+              <h3 class="product-detail-title">${product.name}</h3>
+              ${product.subtitle ? `<p class="product-detail-subtitle">${product.subtitle}</p>` : ''}
+              
+              <div class="product-detail-price-container">
+                <div class="product-detail-price">
+                  <span class="price-current">${this.utils.formatCurrency(product.discountedPrice || product.price)}</span>
+                  ${product.discountedPrice && product.originalPrice ? 
+                    `<span class="price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+                </div>
+                ${product.discountedPrice && product.originalPrice ? 
+                  `<div class="discount-badge">¡Oferta!</div>` : ''}
+              </div>
+              
+              <div class="product-detail-features">
+                <div class="feature-item">
+                  <i class="fas fa-truck" aria-hidden="true"></i>
+                  <span>Entrega disponible</span>
+                </div>
+                <div class="feature-item">
+                  <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                  <span>Calidad garantizada</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="product-detail-actions">
+              <button class="btn btn--primary product-detail-cart-btn" data-product-id="${product.id}">
+                <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}" aria-hidden="true"></i>
+                <span>${this.state.cart.has(product.id) ? 'En el carrito' : 'Añadir al carrito'}</span>
+              </button>
+              <button class="btn btn--secondary product-detail-favorite-btn" data-product-id="${product.id}">
+                <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}" aria-hidden="true"></i>
+                <span>${this.state.favorites.has(product.id) ? 'Quitar favorito' : 'Añadir favorito'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
