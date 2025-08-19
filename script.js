@@ -145,7 +145,9 @@ class MercadonaApp {
       sidebar: '#sidebar',
       categoryList: '#category-list',
       showAllBtn: '#show-all-btn',
+      showNoveltiesBtn: '#show-novelties-btn',
       allCount: '#all-count',
+      noveltiesCount: '#novelties-count',
       favoritesList: '#favorites-list',
       recentList: '#recent-list',
       
@@ -333,6 +335,10 @@ class MercadonaApp {
       this.elements.showAllBtn.addEventListener('click', this.showAllProducts.bind(this));
     }
 
+    if (this.elements.showNoveltiesBtn) {
+      this.elements.showNoveltiesBtn.addEventListener('click', this.showNovelties.bind(this));
+    }
+
     // Filters
     if (this.elements.filtersToggle) {
       this.elements.filtersToggle.addEventListener('click', this.toggleFilters.bind(this));
@@ -505,6 +511,7 @@ class MercadonaApp {
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
         nutritionalInfo: product.nutritional_info || '',
+        isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True',
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,
@@ -555,6 +562,59 @@ class MercadonaApp {
     this.state.categories = new Map(
       [...this.state.categories.entries()].sort((a, b) => b[1] - a[1])
     );
+  }
+
+  /**
+   * Get novelty products
+   */
+  getNoveltyProducts() {
+    return this.state.products.filter(product => product.isNovelty);
+  }
+
+  /**
+   * Show novelties section
+   */
+  showNovelties() {
+    const noveltyProducts = this.getNoveltyProducts();
+    
+    if (noveltyProducts.length === 0) {
+      this.utils.showToast('No hay novedades disponibles', 'info');
+      return;
+    }
+
+    // Clear current filters and search
+    this.state.searchQuery = '';
+    this.state.activeCategory = null;
+    this.state.filters.priceMin = null;
+    this.state.filters.priceMax = null;
+    this.state.filters.categories.clear();
+    
+    // Set filtered products to only novelties
+    this.state.filteredProducts = noveltyProducts;
+    this.state.currentPage = 1;
+    this.state.totalPages = Math.ceil(noveltyProducts.length / this.state.itemsPerPage);
+
+    // Update search input
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = '';
+    }
+    
+    // Update UI
+    this.updateProductsDisplay();
+    this.updatePagination();
+    this.updateResultsCount();
+    this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.hideSearchSuggestions();
+    
+    // Update category buttons
+    this.updateCategoryButtons(null);
+    
+    // Show toast with count
+    this.utils.showToast(`Mostrando ${noveltyProducts.length} novedades`, 'success');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /**
@@ -1078,7 +1138,7 @@ class MercadonaApp {
    */
   createProductCard(product) {
     const card = document.createElement('div');
-    card.className = 'product-card';
+    card.className = `product-card${product.isNovelty ? ' product-card--novelty' : ''}`;
     card.setAttribute('role', 'gridcell');
     card.setAttribute('tabindex', '0');
 
@@ -1095,6 +1155,7 @@ class MercadonaApp {
           alt="${product.name}"
           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='"
         >
+        ${product.isNovelty ? '<div class="product-novelty-badge"><span>NUEVO</span></div>' : ''}
         <div class="product-card-actions">
           <button 
             class="product-action-btn favorite-btn ${isFavorite ? 'active' : ''}"
@@ -1260,6 +1321,12 @@ class MercadonaApp {
         el.classList.toggle('visible', cartCount > 0);
       }
     });
+
+    // Update novelties counter
+    const noveltiesCount = this.getNoveltyProducts().length;
+    if (this.elements.noveltiesCount) {
+      this.elements.noveltiesCount.textContent = noveltiesCount;
+    }
   }
 
   /**

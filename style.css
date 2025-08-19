@@ -1602,6 +1602,107 @@ body {
   color: var(--text-inverse);
 }
 
+/* Product Novelty Indicators */
+.product-novelty-badge {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 2;
+}
+
+.product-novelty-badge span {
+  display: inline-block;
+  background: linear-gradient(45deg, #ff6b6b, #ffa726);
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+  animation: pulse-novelty 2s infinite;
+}
+
+@keyframes pulse-novelty {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.5);
+  }
+}
+
+/* Novelty product card styling */
+.product-card--novelty {
+  border: 2px solid #ff6b6b;
+  position: relative;
+  overflow: hidden;
+}
+
+.product-card--novelty::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6b6b, #ffa726, #ff6b6b);
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.product-card--novelty:hover {
+  border-color: #ff5252;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.2);
+}
+
+/* Novelty button styling */
+.category-btn--novelties {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+  color: var(--color-white);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-btn--novelties::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.category-btn--novelties:hover::before {
+  left: 100%;
+}
+
+.category-btn--novelties:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #ff9800 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.category-btn--novelties .category-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 /* Loading Indicator */
 .loading-indicator {
   display: flex;

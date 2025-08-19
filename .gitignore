@@ -63,3 +63,5 @@ database.local.js
 *.backup
 
 CLAUDE.md
+data/processed/products_macro_backup.csv
+notebooks/novelties_detector.ipynb
