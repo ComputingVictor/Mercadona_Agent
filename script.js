@@ -504,6 +504,7 @@ class MercadonaApp {
         discountedPrice: product.discounted_price ? this.utils.formatPrice(product.discounted_price) : null,
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
+        nutritionalInfo: product.nutritional_info || '',
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,
@@ -689,6 +690,12 @@ class MercadonaApp {
    */
   showSearchSuggestions(query) {
     if (!this.elements.searchSuggestions) return;
+    
+    // Don't show suggestions on mobile devices
+    if (window.innerWidth < 768) {
+      this.hideSearchSuggestions();
+      return;
+    }
 
     const suggestions = this.generateSearchSuggestions(query);
     
@@ -1583,6 +1590,30 @@ class MercadonaApp {
     // Add to recently viewed
     this.addToRecentlyViewed(product.id);
 
+    // Prepare images gallery
+    const images = [];
+    if (product.image) images.push(product.image);
+    if (product.secondaryImage) images.push(product.secondaryImage);
+    
+    const imageGallery = images.length > 1 ? `
+      <div class="product-detail-image-gallery">
+        <div class="product-detail-main-image">
+          <img src="${images[0]}" alt="${product.name}" class="product-detail-image active" data-image-index="0">
+        </div>
+        <div class="product-detail-thumbnails">
+          ${images.map((img, index) => `
+            <button class="product-thumbnail ${index === 0 ? 'active' : ''}" data-image-index="${index}">
+              <img src="${img}" alt="${product.name} - Imagen ${index + 1}">
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    ` : `
+      <div class="product-detail-image-container">
+        <img src="${product.image}" alt="${product.name}" class="product-detail-image">
+      </div>
+    `;
+
     // Create modal content
     const modalContent = `
       <div class="product-detail">
@@ -1592,9 +1623,7 @@ class MercadonaApp {
         
         <div class="product-detail-main">
           <div class="product-detail-image-section">
-            <div class="product-detail-image-container">
-              <img src="${product.image}" alt="${product.name}" class="product-detail-image">
-            </div>
+            ${imageGallery}
           </div>
           
           <div class="product-detail-info-section">
@@ -1611,6 +1640,18 @@ class MercadonaApp {
                 ${product.discountedPrice && product.originalPrice ? 
                   `<div class="discount-badge">¡Oferta!</div>` : ''}
               </div>
+              
+              ${product.nutritionalInfo ? `
+                <div class="product-detail-nutrition">
+                  <h4 class="nutrition-title">
+                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+                    Información del producto
+                  </h4>
+                  <div class="nutrition-content">
+                    <p>${product.nutritionalInfo}</p>
+                  </div>
+                </div>
+              ` : ''}
               
             </div>
             
@@ -1651,6 +1692,27 @@ class MercadonaApp {
           this.closeModal();
         });
       }
+
+      // Image gallery functionality
+      const thumbnails = modal.querySelectorAll('.product-thumbnail');
+      const mainImage = modal.querySelector('.product-detail-image');
+      
+      thumbnails.forEach(thumbnail => {
+        thumbnail.addEventListener('click', () => {
+          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
+          const imageSrc = images[imageIndex];
+          
+          // Update main image
+          if (mainImage) {
+            mainImage.src = imageSrc;
+            mainImage.dataset.imageIndex = imageIndex;
+          }
+          
+          // Update active thumbnail
+          thumbnails.forEach(t => t.classList.remove('active'));
+          thumbnail.classList.add('active');
+        });
+      });
     }
   }
 
