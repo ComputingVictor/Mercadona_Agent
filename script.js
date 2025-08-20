@@ -1,5 +1,5 @@
 /**
- * MERCADONA AGENT V2.0 - MAIN APPLICATION
+ * MERCADONA AGENT V0.2 - MAIN APPLICATION
  * =====================================
  * 
  * Modern, performant, mobile-first grocery product browser
@@ -16,7 +16,7 @@
  * - Smooth animations and micro-interactions
  * 
  * @author Claude Code
- * @version 2.0.0
+ * @version 0.2.0
  */
 
 class MercadonaApp {
@@ -118,7 +118,7 @@ class MercadonaApp {
       }, 100);
       
       this.state.initialized = true;
-      console.log('🚀 Mercadona App v2.0 initialized successfully');
+      console.log('🚀 Mercadona App v0.2 initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize app:', error);
       this.utils.showToast('Error al cargar la aplicación', 'error');

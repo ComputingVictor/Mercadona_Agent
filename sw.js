@@ -5,12 +5,12 @@
  * Provides offline functionality and caching for better performance
  * 
  * @author Claude Code
- * @version 2.0.0
+ * @version 0.2.0
  */
 
-const CACHE_NAME = 'mercadona-agent-v0.1.0';
-const STATIC_CACHE_NAME = 'mercadona-static-v0.1.0';
-const DATA_CACHE_NAME = 'mercadona-data-v0.1.0';
+const CACHE_NAME = 'mercadona-agent-v0.2.0';
+const STATIC_CACHE_NAME = 'mercadona-static-v0.2.0';
+const DATA_CACHE_NAME = 'mercadona-data-v0.2.0';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
