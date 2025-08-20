@@ -111,7 +111,12 @@ class MercadonaApp {
       
       this.showLoadingScreen(false);
       this.restoreScrollPosition();
-      this.restorePageState(); // Restore after UI is initialized
+      
+      // Restore page state after everything is fully initialized
+      setTimeout(() => {
+        this.restorePageState();
+      }, 100);
+      
       this.state.initialized = true;
       console.log('🚀 Mercadona App v2.0 initialized successfully');
     } catch (error) {
@@ -490,6 +495,9 @@ class MercadonaApp {
       Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
+        quoteChar: '"',
+        escapeChar: '"',
+        delimiter: ',',
         transformHeader: header => header.trim(),
         transform: value => value ? value.trim() : '',
         complete: (results) => {
@@ -509,6 +517,7 @@ class MercadonaApp {
    * Process and normalize product data
    */
   processProductData(rawData) {
+    
     // Filter out invalid products and normalize data
     this.state.products = rawData
       .filter(product => product.name && product.name.trim() !== '')
@@ -523,7 +532,7 @@ class MercadonaApp {
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
         nutritionalInfo: product.nutritional_info || '',
-        isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True',
+        isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True' || product.novedad === 'TRUE',
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,

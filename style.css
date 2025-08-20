@@ -1703,6 +1703,19 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Mobile menu novelties button */
+.mobile-menu-item[data-action="novelties"] {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+  color: var(--color-white);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-menu-item[data-action="novelties"]:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #ff9800 100%);
+  transform: translateY(-2px);
+}
+
 /* Loading Indicator */
 .loading-indicator {
   display: flex;
