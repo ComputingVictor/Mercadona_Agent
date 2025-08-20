@@ -65,3 +65,4 @@ database.local.js
 CLAUDE.md
 data/processed/products_macro_backup.csv
 notebooks/novelties_detector.ipynb
+.claude/settings.local.json

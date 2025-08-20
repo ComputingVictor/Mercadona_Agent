@@ -36,6 +36,7 @@ class MercadonaApp {
       currentSort: 'relevance',
       searchQuery: '',
       activeCategory: null,
+      showingNovelties: false,
       filters: {
         priceMin: null,
         priceMax: null,
@@ -71,7 +72,8 @@ class MercadonaApp {
       CART: 'mercadona_cart_v2',
       RECENT: 'mercadona_recent_v2',
       SETTINGS: 'mercadona_settings_v2',
-      THEME: 'mercadona_theme_v2'
+      THEME: 'mercadona_theme_v2',
+      SCROLL_POSITION: 'mercadona_scroll_position_v2'
     };
 
     this.SETTINGS_DEFAULTS = {
@@ -107,6 +109,7 @@ class MercadonaApp {
       this.handlePWAShortcuts();
       
       this.showLoadingScreen(false);
+      this.restoreScrollPosition();
       this.state.initialized = true;
       console.log('🚀 Mercadona App v2.0 initialized successfully');
     } catch (error) {
@@ -126,6 +129,7 @@ class MercadonaApp {
       loadingIndicator: '#loading-indicator',
       
       // Header
+      logoHome: '#logo-home',
       searchInput: '#search-input',
       searchSuggestions: '#search-suggestions',
       clearSearchBtn: '#clear-search',
@@ -291,6 +295,11 @@ class MercadonaApp {
    * Attach event listeners
    */
   attachEventListeners() {
+    // Logo home navigation
+    if (this.elements.logoHome) {
+      this.elements.logoHome.addEventListener('click', this.goHome.bind(this));
+    }
+    
     // Search functionality
     if (this.elements.searchInput) {
       this.elements.searchInput.addEventListener('input', this.handlers.search);
@@ -585,6 +594,7 @@ class MercadonaApp {
     // Clear current filters and search
     this.state.searchQuery = '';
     this.state.activeCategory = null;
+    this.state.showingNovelties = true;
     this.state.filters.priceMin = null;
     this.state.filters.priceMax = null;
     this.state.filters.categories.clear();
@@ -609,6 +619,7 @@ class MercadonaApp {
     
     // Update category buttons
     this.updateCategoryButtons(null);
+    this.updateNoveltiesUI();
     
     // Show toast with count
     this.utils.showToast(`Mostrando ${noveltyProducts.length} novedades`, 'success');
@@ -693,11 +704,15 @@ class MercadonaApp {
   handleSearch(event) {
     const query = event.target.value.trim();
     this.state.searchQuery = query;
+    this.state.showingNovelties = false; // Reset novelties when searching
     
     // Update clear button visibility
     if (this.elements.clearSearchBtn) {
       this.elements.clearSearchBtn.classList.toggle('visible', query.length > 0);
     }
+
+    // Update UI
+    this.updateNoveltiesUI();
 
     // Show suggestions
     if (query.length >= 2) {
@@ -1018,8 +1033,47 @@ class MercadonaApp {
    */
   showAllProducts() {
     this.state.activeCategory = null;
+    this.state.showingNovelties = false;
     this.updateCategoriesUI();
+    this.updateNoveltiesUI();
     this.applyCurrentFilters();
+  }
+
+  /**
+   * Update novelties button UI state
+   */
+  updateNoveltiesUI() {
+    if (!this.elements.showNoveltiesBtn) return;
+    
+    if (this.state.showingNovelties) {
+      this.elements.showNoveltiesBtn.classList.add('active');
+      this.elements.showAllBtn?.classList.remove('active');
+    } else {
+      this.elements.showNoveltiesBtn.classList.remove('active');
+    }
+  }
+
+  /**
+   * Navigate to home - reset all filters and go to top
+   */
+  goHome() {
+    // Reset all filters and search
+    this.state.showingNovelties = false;
+    this.clearSearch();
+    this.clearAllFilters();
+    
+    // Go to top of page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Show all products
+    this.showAllProducts();
+    
+    // Close any open panels or menus
+    this.closeModal();
+    this.closeCartPanel();
+    this.closeMobileMenu();
+    
+    this.utils.showToast('¡Bienvenido al inicio!', 'success');
   }
 
   /**
@@ -2212,7 +2266,43 @@ class MercadonaApp {
    * Handle scroll for other effects
    */
   handleScroll() {
-    // Scroll handling for future features
+    // Save scroll position for persistence on refresh
+    this.saveScrollPosition();
+  }
+
+  /**
+   * Save current scroll position to localStorage
+   */
+  saveScrollPosition() {
+    const scrollData = {
+      x: window.scrollX,
+      y: window.scrollY,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(this.STORAGE_KEYS.SCROLL_POSITION, JSON.stringify(scrollData));
+  }
+
+  /**
+   * Restore scroll position from localStorage
+   */
+  restoreScrollPosition() {
+    try {
+      const scrollData = localStorage.getItem(this.STORAGE_KEYS.SCROLL_POSITION);
+      if (scrollData) {
+        const { x, y, timestamp } = JSON.parse(scrollData);
+        
+        // Only restore if saved within last 30 minutes (to avoid restoring very old positions)
+        const thirtyMinutes = 30 * 60 * 1000;
+        if (Date.now() - timestamp < thirtyMinutes) {
+          // Delay restoration to ensure page is fully loaded
+          setTimeout(() => {
+            window.scrollTo(x, y);
+          }, 100);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not restore scroll position:', error);
+    }
   }
 
   // =====================================================
@@ -2225,7 +2315,7 @@ class MercadonaApp {
   async registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
+        const registration = await navigator.serviceWorker.register('./sw.js');
         console.log('🔧 Service Worker registered:', registration);
         
         // Handle service worker updates
