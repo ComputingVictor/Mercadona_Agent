@@ -1,5 +1,5 @@
 /**
- * MERCADONA AGENT V2.0 - MAIN APPLICATION
+ * MERCADONA AGENT V0.2 - MAIN APPLICATION
  * =====================================
  * 
  * Modern, performant, mobile-first grocery product browser
@@ -16,7 +16,7 @@
  * - Smooth animations and micro-interactions
  * 
  * @author Claude Code
- * @version 2.0.0
+ * @version 0.2.0
  */
 
 class MercadonaApp {
@@ -36,6 +36,7 @@ class MercadonaApp {
       currentSort: 'relevance',
       searchQuery: '',
       activeCategory: null,
+      showingNovelties: false,
       filters: {
         priceMin: null,
         priceMax: null,
@@ -71,12 +72,19 @@ class MercadonaApp {
       CART: 'mercadona_cart_v2',
       RECENT: 'mercadona_recent_v2',
       SETTINGS: 'mercadona_settings_v2',
-      THEME: 'mercadona_theme_v2'
+      THEME: 'mercadona_theme_v2',
+      SCROLL_POSITION: 'mercadona_scroll_position_v2',
+      PAGE_STATE: 'mercadona_page_state_v2'
     };
 
     this.SETTINGS_DEFAULTS = {
       itemsPerPage: 24,
-      theme: 'light'
+      theme: 'light',
+      autoTheme: false,
+      themeSchedule: {
+        darkStart: '20:00',
+        lightStart: '07:00'
+      }
     };
 
     // Initialize app
@@ -94,9 +102,23 @@ class MercadonaApp {
       this.attachEventListeners();
       await this.loadData();
       this.initializeUI();
+      
+      // Register service worker for PWA functionality
+      await this.registerServiceWorker();
+      
+      // Handle PWA shortcuts
+      this.handlePWAShortcuts();
+      
       this.showLoadingScreen(false);
+      this.restoreScrollPosition();
+      
+      // Restore page state after everything is fully initialized
+      setTimeout(() => {
+        this.restorePageState();
+      }, 100);
+      
       this.state.initialized = true;
-      console.log('🚀 Mercadona App v2.0 initialized successfully');
+      console.log('🚀 Mercadona App v0.2 initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize app:', error);
       this.utils.showToast('Error al cargar la aplicación', 'error');
@@ -114,6 +136,7 @@ class MercadonaApp {
       loadingIndicator: '#loading-indicator',
       
       // Header
+      logoHome: '#logo-home',
       searchInput: '#search-input',
       searchSuggestions: '#search-suggestions',
       clearSearchBtn: '#clear-search',
@@ -128,12 +151,15 @@ class MercadonaApp {
       // Action buttons
       cartBtn: '#cart-btn',
       cartCount: '#cart-count',
+      mobileNoveltiesCount: '#mobile-novelties-count',
       
       // Sidebar
       sidebar: '#sidebar',
       categoryList: '#category-list',
       showAllBtn: '#show-all-btn',
+      showNoveltiesBtn: '#show-novelties-btn',
       allCount: '#all-count',
+      noveltiesCount: '#novelties-count',
       favoritesList: '#favorites-list',
       recentList: '#recent-list',
       
@@ -192,6 +218,10 @@ class MercadonaApp {
 
     // Cache mobile menu items with data attributes
     this.elements.mobileMenuItems = document.querySelectorAll('.mobile-menu-item[data-action]');
+    
+    // Cache accessibility elements
+    this.elements.srAnnouncements = document.getElementById('sr-announcements');
+    this.elements.srStatus = document.getElementById('sr-status');
   }
 
   /**
@@ -224,10 +254,21 @@ class MercadonaApp {
         this.state.recentlyViewed = JSON.parse(savedRecent);
       }
       
+      // Load auto theme preference
+      this.state.autoTheme = settings.autoTheme || this.SETTINGS_DEFAULTS.autoTheme;
+      this.state.themeSchedule = settings.themeSchedule || this.SETTINGS_DEFAULTS.themeSchedule;
+
       // Load and apply theme
       const savedTheme = localStorage.getItem(this.STORAGE_KEYS.THEME);
       const theme = savedTheme || settings.theme || this.SETTINGS_DEFAULTS.theme;
-      this.setTheme(theme);
+      
+      // Apply automatic theme if enabled
+      if (this.state.autoTheme) {
+        this.applyAutomaticTheme();
+        this.startAutoThemeScheduler();
+      } else {
+        this.setTheme(theme);
+      }
       
     } catch (error) {
       console.error('❌ Error loading settings:', error);
@@ -243,7 +284,9 @@ class MercadonaApp {
     try {
       const settings = {
         itemsPerPage: this.state.itemsPerPage,
-        theme: document.documentElement.getAttribute('data-theme') || 'light'
+        theme: document.documentElement.getAttribute('data-theme') || 'light',
+        autoTheme: this.state.autoTheme || false,
+        themeSchedule: this.state.themeSchedule || this.SETTINGS_DEFAULTS.themeSchedule
       };
       
       localStorage.setItem(this.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
@@ -260,6 +303,11 @@ class MercadonaApp {
    * Attach event listeners
    */
   attachEventListeners() {
+    // Logo home navigation
+    if (this.elements.logoHome) {
+      this.elements.logoHome.addEventListener('click', this.goHome.bind(this));
+    }
+    
     // Search functionality
     if (this.elements.searchInput) {
       this.elements.searchInput.addEventListener('input', this.handlers.search);
@@ -302,6 +350,10 @@ class MercadonaApp {
     // Sidebar
     if (this.elements.showAllBtn) {
       this.elements.showAllBtn.addEventListener('click', this.showAllProducts.bind(this));
+    }
+
+    if (this.elements.showNoveltiesBtn) {
+      this.elements.showNoveltiesBtn.addEventListener('click', this.showNovelties.bind(this));
     }
 
     // Filters
@@ -367,6 +419,13 @@ class MercadonaApp {
     // Global event listeners
     window.addEventListener('resize', this.handlers.resize);
     window.addEventListener('scroll', this.handlers.scroll);
+    
+    // PWA install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      console.log('💾 PWA install prompt ready');
+    });
     
     // Keyboard navigation
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -436,6 +495,9 @@ class MercadonaApp {
       Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
+        quoteChar: '"',
+        escapeChar: '"',
+        delimiter: ',',
         transformHeader: header => header.trim(),
         transform: value => value ? value.trim() : '',
         complete: (results) => {
@@ -455,6 +517,7 @@ class MercadonaApp {
    * Process and normalize product data
    */
   processProductData(rawData) {
+    
     // Filter out invalid products and normalize data
     this.state.products = rawData
       .filter(product => product.name && product.name.trim() !== '')
@@ -468,6 +531,8 @@ class MercadonaApp {
         discountedPrice: product.discounted_price ? this.utils.formatPrice(product.discounted_price) : null,
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
+        nutritionalInfo: product.nutritional_info || '',
+        isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True' || product.novedad === 'TRUE',
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,
@@ -521,6 +586,64 @@ class MercadonaApp {
   }
 
   /**
+   * Get novelty products
+   */
+  getNoveltyProducts() {
+    return this.state.products.filter(product => product.isNovelty);
+  }
+
+  /**
+   * Show novelties section
+   */
+  showNovelties() {
+    const noveltyProducts = this.getNoveltyProducts();
+    
+    if (noveltyProducts.length === 0) {
+      this.utils.showToast('No hay novedades disponibles', 'info');
+      return;
+    }
+
+    // Clear current filters and search
+    this.state.searchQuery = '';
+    this.state.activeCategory = null;
+    this.state.showingNovelties = true;
+    this.state.filters.priceMin = null;
+    this.state.filters.priceMax = null;
+    this.state.filters.categories.clear();
+    
+    // Set filtered products to only novelties
+    this.state.filteredProducts = noveltyProducts;
+    this.state.currentPage = 1;
+    this.state.totalPages = Math.ceil(noveltyProducts.length / this.state.itemsPerPage);
+
+    // Update search input
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = '';
+    }
+    
+    // Update UI
+    this.updateProductsDisplay();
+    this.updatePagination();
+    this.updateResultsCount();
+    this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.hideSearchSuggestions();
+    
+    // Update category buttons
+    this.updateCategoryButtons(null);
+    this.updateNoveltiesUI();
+    
+    // Show toast with count
+    this.utils.showToast(`Mostrando ${noveltyProducts.length} novedades`, 'success');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Save page state
+    this.savePageState();
+  }
+
+  /**
    * Initialize UI components
    */
   initializeUI() {
@@ -531,6 +654,19 @@ class MercadonaApp {
     this.updateFavoritesUI();
     this.updateRecentlyViewedUI();
     this.applyCurrentFilters();
+    
+    // Initialize accessibility features
+    this.enhanceKeyboardNavigation();
+    this.updateAriaLabels();
+    
+    // Initialize PWA features
+    this.handleNetworkStatus();
+    
+    // Initialize touch gestures for mobile
+    if ('ontouchstart' in window) {
+      this.initTouchGestures();
+      this.attachLongPressGestures();
+    }
     
     // Initialize mobile FAB visibility
     if (window.innerWidth < 768) {
@@ -583,11 +719,15 @@ class MercadonaApp {
   handleSearch(event) {
     const query = event.target.value.trim();
     this.state.searchQuery = query;
+    this.state.showingNovelties = false; // Reset novelties when searching
     
     // Update clear button visibility
     if (this.elements.clearSearchBtn) {
       this.elements.clearSearchBtn.classList.toggle('visible', query.length > 0);
     }
+
+    // Update UI
+    this.updateNoveltiesUI();
 
     // Show suggestions
     if (query.length >= 2) {
@@ -598,6 +738,7 @@ class MercadonaApp {
 
     // Apply search filter
     this.applyCurrentFilters();
+    this.savePageState(); // Save state when search changes
   }
 
   /**
@@ -640,6 +781,12 @@ class MercadonaApp {
    */
   showSearchSuggestions(query) {
     if (!this.elements.searchSuggestions) return;
+    
+    // Don't show suggestions on mobile devices
+    if (window.innerWidth < 768) {
+      this.hideSearchSuggestions();
+      return;
+    }
 
     const suggestions = this.generateSearchSuggestions(query);
     
@@ -804,6 +951,8 @@ class MercadonaApp {
     this.updatePagination();
     this.updateResultsCount();
     this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.updateAriaLabels();
   }
 
   /**
@@ -900,8 +1049,47 @@ class MercadonaApp {
    */
   showAllProducts() {
     this.state.activeCategory = null;
+    this.state.showingNovelties = false;
     this.updateCategoriesUI();
+    this.updateNoveltiesUI();
     this.applyCurrentFilters();
+  }
+
+  /**
+   * Update novelties button UI state
+   */
+  updateNoveltiesUI() {
+    if (!this.elements.showNoveltiesBtn) return;
+    
+    if (this.state.showingNovelties) {
+      this.elements.showNoveltiesBtn.classList.add('active');
+      this.elements.showAllBtn?.classList.remove('active');
+    } else {
+      this.elements.showNoveltiesBtn.classList.remove('active');
+    }
+  }
+
+  /**
+   * Navigate to home - reset all filters and go to top
+   */
+  goHome() {
+    // Reset all filters and search
+    this.state.showingNovelties = false;
+    this.clearSearch();
+    this.clearAllFilters();
+    
+    // Go to top of page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Show all products
+    this.showAllProducts();
+    
+    // Close any open panels or menus
+    this.closeModal();
+    this.closeCartPanel();
+    this.closeMobileMenu();
+    
+    this.utils.showToast('¡Bienvenido al inicio!', 'success');
   }
 
   /**
@@ -1020,7 +1208,7 @@ class MercadonaApp {
    */
   createProductCard(product) {
     const card = document.createElement('div');
-    card.className = 'product-card';
+    card.className = `product-card${product.isNovelty ? ' product-card--novelty' : ''}`;
     card.setAttribute('role', 'gridcell');
     card.setAttribute('tabindex', '0');
 
@@ -1037,6 +1225,7 @@ class MercadonaApp {
           alt="${product.name}"
           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='"
         >
+        ${product.isNovelty ? '<div class="product-novelty-badge"><span>NUEVO</span></div>' : ''}
         <div class="product-card-actions">
           <button 
             class="product-action-btn favorite-btn ${isFavorite ? 'active' : ''}"
@@ -1202,6 +1391,15 @@ class MercadonaApp {
         el.classList.toggle('visible', cartCount > 0);
       }
     });
+
+    // Update novelties counter
+    const noveltiesCount = this.getNoveltyProducts().length;
+    if (this.elements.noveltiesCount) {
+      this.elements.noveltiesCount.textContent = noveltiesCount;
+    }
+    if (this.elements.mobileNoveltiesCount) {
+      this.elements.mobileNoveltiesCount.textContent = noveltiesCount;
+    }
   }
 
   /**
@@ -1314,6 +1512,7 @@ class MercadonaApp {
     this.state.currentPage = newPage;
     this.updateProductsDisplay();
     this.updatePagination();
+    this.savePageState(); // Save page state when page changes
   }
 
 
@@ -1354,6 +1553,91 @@ class MercadonaApp {
         span.textContent = theme === 'dark' ? 'Tema claro' : 'Tema oscuro';
       }
     }
+  }
+
+  /**
+   * Apply automatic theme based on time
+   */
+  applyAutomaticTheme() {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Convert to minutes
+    
+    const darkStart = this.parseTime(this.state.themeSchedule.darkStart);
+    const lightStart = this.parseTime(this.state.themeSchedule.lightStart);
+    
+    let shouldBeDark = false;
+    
+    if (darkStart > lightStart) {
+      // Dark period spans midnight (e.g., 20:00 to 07:00)
+      shouldBeDark = currentTime >= darkStart || currentTime < lightStart;
+    } else {
+      // Dark period within same day (e.g., 07:00 to 20:00 - unusual but supported)
+      shouldBeDark = currentTime >= darkStart && currentTime < lightStart;
+    }
+    
+    const newTheme = shouldBeDark ? 'dark' : 'light';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    
+    if (newTheme !== currentTheme) {
+      this.setTheme(newTheme);
+      console.log(`🌓 Auto theme changed to: ${newTheme}`);
+    }
+  }
+
+  /**
+   * Parse time string to minutes
+   */
+  parseTime(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  /**
+   * Start automatic theme scheduler
+   */
+  startAutoThemeScheduler() {
+    // Clear existing interval if any
+    if (this.autoThemeInterval) {
+      clearInterval(this.autoThemeInterval);
+    }
+    
+    // Check theme every minute
+    this.autoThemeInterval = setInterval(() => {
+      if (this.state.autoTheme) {
+        this.applyAutomaticTheme();
+      }
+    }, 60000);
+    
+    console.log('🕒 Auto theme scheduler started');
+  }
+
+  /**
+   * Stop automatic theme scheduler
+   */
+  stopAutoThemeScheduler() {
+    if (this.autoThemeInterval) {
+      clearInterval(this.autoThemeInterval);
+      this.autoThemeInterval = null;
+      console.log('🕒 Auto theme scheduler stopped');
+    }
+  }
+
+  /**
+   * Toggle automatic theme
+   */
+  toggleAutoTheme() {
+    this.state.autoTheme = !this.state.autoTheme;
+    
+    if (this.state.autoTheme) {
+      this.applyAutomaticTheme();
+      this.startAutoThemeScheduler();
+      this.utils.showToast('Tema automático activado', 'success');
+    } else {
+      this.stopAutoThemeScheduler();
+      this.utils.showToast('Tema automático desactivado', 'info');
+    }
+    
+    this.saveSettings();
   }
 
   /**
@@ -1415,11 +1699,17 @@ class MercadonaApp {
       case 'cart':
         this.toggleCartPanel();
         break;
+      case 'novelties':
+        this.showNovelties();
+        break;
       case 'filters':
         this.toggleFilters();
         break;
       case 'theme':
         this.toggleTheme();
+        break;
+      case 'auto-theme':
+        this.toggleAutoTheme();
         break;
     }
   }
@@ -1444,30 +1734,81 @@ class MercadonaApp {
     // Add to recently viewed
     this.addToRecentlyViewed(product.id);
 
+    // Prepare images gallery
+    const images = [];
+    if (product.image) images.push(product.image);
+    if (product.secondaryImage) images.push(product.secondaryImage);
+    
+    const imageGallery = images.length > 1 ? `
+      <div class="product-detail-image-gallery">
+        <div class="product-detail-main-image">
+          <img src="${images[0]}" alt="${product.name}" class="product-detail-image active" data-image-index="0">
+        </div>
+        <div class="product-detail-thumbnails">
+          ${images.map((img, index) => `
+            <button class="product-thumbnail ${index === 0 ? 'active' : ''}" data-image-index="${index}">
+              <img src="${img}" alt="${product.name} - Imagen ${index + 1}">
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    ` : `
+      <div class="product-detail-image-container">
+        <img src="${product.image}" alt="${product.name}" class="product-detail-image">
+      </div>
+    `;
+
     // Create modal content
     const modalContent = `
       <div class="product-detail">
-        <div class="product-detail-image">
-          <img src="${product.image}" alt="${product.name}">
+        <div class="product-detail-header">
+          <div class="product-detail-category-badge">${product.category}</div>
         </div>
-        <div class="product-detail-info">
-          <div class="product-detail-category">${product.category}</div>
-          <h3 class="product-detail-title">${product.name}</h3>
-          ${product.subtitle ? `<p class="product-detail-subtitle">${product.subtitle}</p>` : ''}
-          <div class="product-detail-price">
-            <span class="price-current">${this.utils.formatCurrency(product.discountedPrice || product.price)}</span>
-            ${product.discountedPrice && product.originalPrice ? 
-              `<span class="price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+        
+        <div class="product-detail-main">
+          <div class="product-detail-image-section">
+            ${imageGallery}
           </div>
-          <div class="product-detail-actions">
-            <button class="btn btn--primary product-detail-cart-btn" data-product-id="${product.id}">
-              <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}" aria-hidden="true"></i>
-              ${this.state.cart.has(product.id) ? 'En el carrito' : 'Añadir al carrito'}
-            </button>
-            <button class="btn btn--secondary product-detail-favorite-btn" data-product-id="${product.id}">
-              <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}" aria-hidden="true"></i>
-              ${this.state.favorites.has(product.id) ? 'Quitar favorito' : 'Añadir favorito'}
-            </button>
+          
+          <div class="product-detail-info-section">
+            <div class="product-detail-content">
+              <h3 class="product-detail-title">${product.name}</h3>
+              ${product.subtitle ? `<p class="product-detail-subtitle">${product.subtitle}</p>` : ''}
+              
+              <div class="product-detail-price-container">
+                <div class="product-detail-price">
+                  <span class="price-current">${this.utils.formatCurrency(product.discountedPrice || product.price)}</span>
+                  ${product.discountedPrice && product.originalPrice ? 
+                    `<span class="price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+                </div>
+                ${product.discountedPrice && product.originalPrice ? 
+                  `<div class="discount-badge">¡Oferta!</div>` : ''}
+              </div>
+              
+              ${product.nutritionalInfo ? `
+                <div class="product-detail-nutrition">
+                  <h4 class="nutrition-title">
+                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+                    Información del producto
+                  </h4>
+                  <div class="nutrition-content">
+                    <p>${product.nutritionalInfo}</p>
+                  </div>
+                </div>
+              ` : ''}
+              
+            </div>
+            
+            <div class="product-detail-actions">
+              <button class="btn btn--primary product-detail-cart-btn" data-product-id="${product.id}">
+                <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}" aria-hidden="true"></i>
+                <span>${this.state.cart.has(product.id) ? 'En el carrito' : 'Añadir al carrito'}</span>
+              </button>
+              <button class="btn btn--secondary product-detail-favorite-btn" data-product-id="${product.id}">
+                <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}" aria-hidden="true"></i>
+                <span>${this.state.favorites.has(product.id) ? 'Quitar favorito' : 'Añadir favorito'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1495,6 +1836,27 @@ class MercadonaApp {
           this.closeModal();
         });
       }
+
+      // Image gallery functionality
+      const thumbnails = modal.querySelectorAll('.product-thumbnail');
+      const mainImage = modal.querySelector('.product-detail-image');
+      
+      thumbnails.forEach(thumbnail => {
+        thumbnail.addEventListener('click', () => {
+          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
+          const imageSrc = images[imageIndex];
+          
+          // Update main image
+          if (mainImage) {
+            mainImage.src = imageSrc;
+            mainImage.dataset.imageIndex = imageIndex;
+          }
+          
+          // Update active thumbnail
+          thumbnails.forEach(t => t.classList.remove('active'));
+          thumbnail.classList.add('active');
+        });
+      });
     }
   }
 
@@ -1874,7 +2236,7 @@ class MercadonaApp {
    * Toggle mobile filters (opens sidebar)
    */
   toggleMobileFilters() {
-    const isOpen = this.elements.sidebar?.classList.contains('mobile-open');
+    const isOpen = this.elements.sidebar?.classList.contains('active');
     
     if (isOpen) {
       this.closeMobileFilters();
@@ -1888,7 +2250,7 @@ class MercadonaApp {
    */
   openMobileFilters() {
     if (this.elements.sidebar) {
-      this.elements.sidebar.classList.add('mobile-open');
+      this.elements.sidebar.classList.add('active');
     }
     
     if (this.elements.mobileFiltersFab) {
@@ -1908,7 +2270,7 @@ class MercadonaApp {
    */
   closeMobileFilters() {
     if (this.elements.sidebar) {
-      this.elements.sidebar.classList.remove('mobile-open');
+      this.elements.sidebar.classList.remove('active');
     }
     
     if (this.elements.mobileFiltersFab) {
@@ -1927,7 +2289,661 @@ class MercadonaApp {
    * Handle scroll for other effects
    */
   handleScroll() {
-    // Scroll handling for future features
+    // Save scroll position for persistence on refresh
+    this.saveScrollPosition();
+  }
+
+  /**
+   * Save current scroll position to localStorage
+   */
+  saveScrollPosition() {
+    const scrollData = {
+      x: window.scrollX,
+      y: window.scrollY,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(this.STORAGE_KEYS.SCROLL_POSITION, JSON.stringify(scrollData));
+  }
+
+  /**
+   * Restore scroll position from localStorage
+   */
+  restoreScrollPosition() {
+    try {
+      const scrollData = localStorage.getItem(this.STORAGE_KEYS.SCROLL_POSITION);
+      if (scrollData) {
+        const { x, y, timestamp } = JSON.parse(scrollData);
+        
+        // Only restore if saved within last 30 minutes (to avoid restoring very old positions)
+        const thirtyMinutes = 30 * 60 * 1000;
+        if (Date.now() - timestamp < thirtyMinutes) {
+          // Delay restoration to ensure page is fully loaded
+          setTimeout(() => {
+            window.scrollTo(x, y);
+          }, 100);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not restore scroll position:', error);
+    }
+  }
+
+  /**
+   * Save current page state to localStorage
+   */
+  savePageState() {
+    try {
+      const pageState = {
+        currentPage: this.state.currentPage,
+        itemsPerPage: this.state.itemsPerPage,
+        searchQuery: this.state.searchQuery,
+        activeCategory: this.state.activeCategory,
+        showingNovelties: this.state.showingNovelties,
+        sortBy: this.state.currentSort,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(this.STORAGE_KEYS.PAGE_STATE, JSON.stringify(pageState));
+    } catch (error) {
+      console.warn('Could not save page state:', error);
+    }
+  }
+
+  /**
+   * Restore page state from localStorage
+   */
+  restorePageState() {
+    try {
+      const pageStateData = localStorage.getItem(this.STORAGE_KEYS.PAGE_STATE);
+      if (pageStateData) {
+        const pageState = JSON.parse(pageStateData);
+        
+        // Only restore if saved within last hour
+        const oneHour = 60 * 60 * 1000;
+        if (Date.now() - pageState.timestamp < oneHour) {
+          // Restore state
+          this.state.currentPage = pageState.currentPage || 1;
+          this.state.itemsPerPage = pageState.itemsPerPage || 24;
+          this.state.searchQuery = pageState.searchQuery || '';
+          this.state.activeCategory = pageState.activeCategory || null;
+          this.state.showingNovelties = pageState.showingNovelties || false;
+          this.state.currentSort = pageState.sortBy || 'relevance';
+          
+          // Update UI elements
+          if (this.elements.searchInput) {
+            this.elements.searchInput.value = this.state.searchQuery;
+          }
+          if (this.elements.itemsPerPageSelect) {
+            this.elements.itemsPerPageSelect.value = this.state.itemsPerPage;
+          }
+          if (this.elements.sortSelect) {
+            this.elements.sortSelect.value = this.state.currentSort;
+          }
+          
+          // Apply the restored state
+          if (this.state.showingNovelties) {
+            this.showNovelties();
+          } else if (this.state.searchQuery) {
+            this.applyCurrentFilters();
+          } else {
+            this.applyCurrentFilters();
+          }
+          
+          console.log(`📄 Restored page state: page ${this.state.currentPage}`);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not restore page state:', error);
+    }
+  }
+
+  // =====================================================
+  // PWA FUNCTIONALITY
+  // =====================================================
+
+  /**
+   * Register service worker
+   */
+  async registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('./sw.js');
+        console.log('🔧 Service Worker registered:', registration);
+        
+        // Handle service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              this.showUpdateAvailable();
+            }
+          });
+        });
+
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SYNC_COMPLETE') {
+            this.utils.showToast('Datos sincronizados', 'success');
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ Service Worker registration failed:', error);
+      }
+    }
+  }
+
+  /**
+   * Show update available notification
+   */
+  showUpdateAvailable() {
+    const updateBanner = document.createElement('div');
+    updateBanner.className = 'update-banner';
+    updateBanner.innerHTML = `
+      <div class="update-content">
+        <span>Nueva versión disponible</span>
+        <button class="update-btn" onclick="window.mercadonaApp.updateApp()">Actualizar</button>
+      </div>
+    `;
+    document.body.appendChild(updateBanner);
+  }
+
+  /**
+   * Update app with new service worker
+   */
+  updateApp() {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      window.location.reload();
+    }
+  }
+
+  /**
+   * Handle PWA shortcuts from manifest
+   */
+  handlePWAShortcuts() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+
+    switch (action) {
+      case 'cart':
+        setTimeout(() => this.openCartPanel(), 500);
+        break;
+      case 'favorites':
+        // Focus on favorites section in sidebar
+        setTimeout(() => {
+          if (this.elements.favoritesList) {
+            this.elements.favoritesList.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+        break;
+    }
+  }
+
+  /**
+   * Check if app is running as PWA
+   */
+  isPWA() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  /**
+   * Show install prompt for PWA
+   */
+  showInstallPrompt() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      this.deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('✅ PWA install accepted');
+        } else {
+          console.log('❌ PWA install declined');
+        }
+        this.deferredPrompt = null;
+      });
+    }
+  }
+
+  /**
+   * Handle offline/online status
+   */
+  handleNetworkStatus() {
+    const updateNetworkStatus = () => {
+      if (navigator.onLine) {
+        this.utils.showToast('Conexión restaurada', 'success');
+        document.body.classList.remove('offline');
+      } else {
+        this.utils.showToast('Modo offline activo', 'warning');
+        document.body.classList.add('offline');
+      }
+    };
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    
+    // Initial status
+    if (!navigator.onLine) {
+      document.body.classList.add('offline');
+    }
+  }
+
+  // =====================================================
+  // TOUCH GESTURES
+  // =====================================================
+
+  /**
+   * Initialize touch gestures
+   */
+  initTouchGestures() {
+    // Add touch gesture support to product cards
+    this.attachProductCardGestures();
+    
+    // Add swipe gestures for navigation
+    this.attachSwipeGestures();
+    
+    // Add pull-to-refresh
+    this.attachPullToRefresh();
+  }
+
+  /**
+   * Attach gestures to product cards
+   */
+  attachProductCardGestures() {
+    let touchStartX, touchStartY, touchStartTime;
+    let isSwipe = false;
+
+    document.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.product-card')) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = Date.now();
+        isSwipe = false;
+      }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (e.target.closest('.product-card') && touchStartX !== undefined) {
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        const deltaY = Math.abs(touch.clientY - touchStartY);
+        
+        // If horizontal movement is significant, it's likely a swipe
+        if (deltaX > 30 && deltaX > deltaY) {
+          isSwipe = true;
+        }
+      }
+    });
+
+    document.addEventListener('touchend', (e) => {
+      const card = e.target.closest('.product-card');
+      if (card && touchStartX !== undefined) {
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (isSwipe && Math.abs(deltaX) > 50 && deltaTime < 500) {
+          // Swipe gesture detected
+          e.preventDefault();
+          const productId = card.querySelector('[data-product-id]')?.dataset.productId;
+          
+          if (deltaX > 0) {
+            // Swipe right - add to favorites
+            this.toggleFavorite(productId);
+            this.showSwipeFeedback(card, 'favorite');
+          } else {
+            // Swipe left - add to cart
+            this.toggleCart(productId);
+            this.showSwipeFeedback(card, 'cart');
+          }
+        }
+        
+        // Reset
+        touchStartX = undefined;
+        touchStartY = undefined;
+        isSwipe = false;
+      }
+    });
+  }
+
+  /**
+   * Show swipe feedback animation
+   */
+  showSwipeFeedback(card, action) {
+    const feedback = document.createElement('div');
+    feedback.className = `swipe-feedback swipe-feedback--${action}`;
+    feedback.innerHTML = action === 'favorite' 
+      ? '<i class="fas fa-heart"></i>' 
+      : '<i class="fas fa-shopping-cart"></i>';
+    
+    card.appendChild(feedback);
+    
+    // Remove feedback after animation
+    setTimeout(() => {
+      if (feedback.parentNode) {
+        feedback.parentNode.removeChild(feedback);
+      }
+    }, 1000);
+  }
+
+  /**
+   * Attach swipe gestures for navigation
+   */
+  attachSwipeGestures() {
+    let touchStartX, touchStartY;
+    
+    document.addEventListener('touchstart', (e) => {
+      // Only on main content area
+      if (e.target.closest('.main-content')) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+    });
+
+    document.addEventListener('touchend', (e) => {
+      if (touchStartX !== undefined && e.target.closest('.main-content')) {
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        
+        // Only if horizontal swipe is dominant
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+          if (deltaX > 0 && this.state.currentPage > 1) {
+            // Swipe right - previous page
+            this.changePage(this.state.currentPage - 1);
+          } else if (deltaX < 0 && this.state.currentPage < this.state.totalPages) {
+            // Swipe left - next page
+            this.changePage(this.state.currentPage + 1);
+          }
+        }
+        
+        touchStartX = undefined;
+        touchStartY = undefined;
+      }
+    });
+  }
+
+  /**
+   * Attach pull-to-refresh gesture
+   */
+  attachPullToRefresh() {
+    let startY = 0;
+    let currentY = 0;
+    let pullDistance = 0;
+    let isPulling = false;
+    let refreshTriggered = false;
+
+    const threshold = 100; // Distance to trigger refresh
+    const container = document.body;
+
+    container.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+        isPulling = true;
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (isPulling && window.scrollY === 0) {
+        currentY = e.touches[0].clientY;
+        pullDistance = Math.max(0, currentY - startY);
+        
+        if (pullDistance > 10) {
+          e.preventDefault(); // Prevent default scroll
+          
+          // Visual feedback
+          const pullIndicator = document.querySelector('.pull-indicator') || this.createPullIndicator();
+          pullIndicator.style.transform = `translateY(${Math.min(pullDistance, threshold)}px)`;
+          pullIndicator.style.opacity = Math.min(pullDistance / threshold, 1);
+          
+          if (pullDistance >= threshold && !refreshTriggered) {
+            pullIndicator.classList.add('ready');
+            this.vibrate(50); // Haptic feedback
+          } else {
+            pullIndicator.classList.remove('ready');
+          }
+        }
+      }
+    });
+
+    container.addEventListener('touchend', () => {
+      if (isPulling && pullDistance >= threshold && !refreshTriggered) {
+        refreshTriggered = true;
+        this.triggerRefresh();
+      }
+      
+      // Reset
+      isPulling = false;
+      pullDistance = 0;
+      refreshTriggered = false;
+      
+      const pullIndicator = document.querySelector('.pull-indicator');
+      if (pullIndicator) {
+        pullIndicator.style.transform = 'translateY(-100%)';
+        pullIndicator.style.opacity = '0';
+      }
+    });
+  }
+
+  /**
+   * Create pull-to-refresh indicator
+   */
+  createPullIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'pull-indicator';
+    indicator.innerHTML = `
+      <div class="pull-icon">
+        <i class="fas fa-arrow-down"></i>
+      </div>
+      <span>Desliza para actualizar</span>
+    `;
+    document.body.appendChild(indicator);
+    return indicator;
+  }
+
+  /**
+   * Trigger refresh action
+   */
+  async triggerRefresh() {
+    try {
+      this.utils.showToast('Actualizando productos...', 'info');
+      await this.loadData();
+      this.utils.showToast('Productos actualizados', 'success');
+    } catch (error) {
+      this.utils.showToast('Error al actualizar', 'error');
+    }
+  }
+
+  /**
+   * Trigger haptic feedback
+   */
+  vibrate(duration = 50) {
+    if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  }
+
+  /**
+   * Add long press gesture support
+   */
+  attachLongPressGestures() {
+    let pressTimer;
+    
+    document.addEventListener('touchstart', (e) => {
+      const productCard = e.target.closest('.product-card');
+      if (productCard) {
+        pressTimer = setTimeout(() => {
+          // Long press detected
+          this.vibrate(100);
+          const productId = productCard.querySelector('[data-product-id]')?.dataset.productId;
+          const product = this.state.products.find(p => p.id === productId);
+          
+          if (product) {
+            this.showProductQuickActions(product, e.touches[0]);
+          }
+        }, 500);
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+
+    document.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+    });
+  }
+
+  /**
+   * Show quick actions menu for long press
+   */
+  showProductQuickActions(product, touch) {
+    const menu = document.createElement('div');
+    menu.className = 'quick-actions-menu';
+    menu.style.left = `${touch.clientX - 50}px`;
+    menu.style.top = `${touch.clientY - 100}px`;
+    
+    const isFavorite = this.state.favorites.has(product.id);
+    const isInCart = this.state.cart.has(product.id);
+    
+    menu.innerHTML = `
+      <button class="quick-action" data-action="favorite">
+        <i class="fas fa-heart ${isFavorite ? 'active' : ''}"></i>
+        ${isFavorite ? 'Quitar favorito' : 'Favorito'}
+      </button>
+      <button class="quick-action" data-action="cart">
+        <i class="fas fa-shopping-cart"></i>
+        ${isInCart ? 'Quitar carrito' : 'Al carrito'}
+      </button>
+      <button class="quick-action" data-action="view">
+        <i class="fas fa-eye"></i>
+        Ver detalles
+      </button>
+    `;
+    
+    // Add event listeners
+    menu.addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      
+      switch (action) {
+        case 'favorite':
+          this.toggleFavorite(product.id);
+          break;
+        case 'cart':
+          this.toggleCart(product.id);
+          break;
+        case 'view':
+          this.viewProductDetails(product);
+          break;
+      }
+      
+      document.body.removeChild(menu);
+    });
+    
+    document.body.appendChild(menu);
+    
+    // Remove menu after 3 seconds or on touch outside
+    setTimeout(() => {
+      if (menu.parentNode) {
+        document.body.removeChild(menu);
+      }
+    }, 3000);
+  }
+
+  // =====================================================
+  // ACCESSIBILITY FUNCTIONS
+  // =====================================================
+
+  /**
+   * Announce message to screen readers
+   */
+  announceToScreenReader(message, priority = 'polite') {
+    const element = priority === 'assertive' ? this.elements.srStatus : this.elements.srAnnouncements;
+    if (element) {
+      element.textContent = message;
+      
+      // Clear after announcement to allow repeated messages
+      setTimeout(() => {
+        element.textContent = '';
+      }, 1000);
+    }
+  }
+
+  /**
+   * Update ARIA live region with current results
+   */
+  updateAriaLiveRegion() {
+    const count = this.state.filteredProducts.length;
+    const message = count === 1 
+      ? `Se encontró 1 producto` 
+      : `Se encontraron ${count} productos`;
+    
+    this.announceToScreenReader(message);
+  }
+
+  /**
+   * Improve keyboard navigation for product cards
+   */
+  enhanceKeyboardNavigation() {
+    // Handle arrow key navigation in product grid
+    document.addEventListener('keydown', (e) => {
+      if (e.target.classList.contains('product-card')) {
+        const cards = Array.from(document.querySelectorAll('.product-card'));
+        const currentIndex = cards.indexOf(e.target);
+        let nextCard = null;
+
+        switch (e.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            nextCard = cards[currentIndex + 1];
+            break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            nextCard = cards[currentIndex - 1];
+            break;
+          case 'Home':
+            nextCard = cards[0];
+            break;
+          case 'End':
+            nextCard = cards[cards.length - 1];
+            break;
+        }
+
+        if (nextCard) {
+          e.preventDefault();
+          nextCard.focus();
+        }
+      }
+    });
+  }
+
+  /**
+   * Add ARIA labels to dynamic content
+   */
+  updateAriaLabels() {
+    // Update cart count aria labels
+    const cartElements = [this.elements.cartBtn, document.querySelector('[data-action="cart"]')];
+    cartElements.forEach(el => {
+      if (el) {
+        const count = this.state.cart.size;
+        el.setAttribute('aria-label', 
+          count === 0 
+            ? 'Lista de compra vacía' 
+            : `Lista de compra con ${count} ${count === 1 ? 'producto' : 'productos'}`
+        );
+      }
+    });
+
+    // Update pagination aria labels
+    if (this.elements.pageInfo) {
+      const pageText = this.state.totalPages > 0 
+        ? `Página ${this.state.currentPage} de ${this.state.totalPages}`
+        : 'Sin resultados';
+      this.elements.pageInfo.setAttribute('aria-label', pageText);
+    }
   }
 
   // =====================================================
