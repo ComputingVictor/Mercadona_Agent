@@ -73,7 +73,8 @@ class MercadonaApp {
       RECENT: 'mercadona_recent_v2',
       SETTINGS: 'mercadona_settings_v2',
       THEME: 'mercadona_theme_v2',
-      SCROLL_POSITION: 'mercadona_scroll_position_v2'
+      SCROLL_POSITION: 'mercadona_scroll_position_v2',
+      PAGE_STATE: 'mercadona_page_state_v2'
     };
 
     this.SETTINGS_DEFAULTS = {
@@ -110,6 +111,7 @@ class MercadonaApp {
       
       this.showLoadingScreen(false);
       this.restoreScrollPosition();
+      this.restorePageState(); // Restore after UI is initialized
       this.state.initialized = true;
       console.log('🚀 Mercadona App v2.0 initialized successfully');
     } catch (error) {
@@ -144,6 +146,7 @@ class MercadonaApp {
       // Action buttons
       cartBtn: '#cart-btn',
       cartCount: '#cart-count',
+      mobileNoveltiesCount: '#mobile-novelties-count',
       
       // Sidebar
       sidebar: '#sidebar',
@@ -626,6 +629,9 @@ class MercadonaApp {
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Save page state
+    this.savePageState();
   }
 
   /**
@@ -723,6 +729,7 @@ class MercadonaApp {
 
     // Apply search filter
     this.applyCurrentFilters();
+    this.savePageState(); // Save state when search changes
   }
 
   /**
@@ -1381,6 +1388,9 @@ class MercadonaApp {
     if (this.elements.noveltiesCount) {
       this.elements.noveltiesCount.textContent = noveltiesCount;
     }
+    if (this.elements.mobileNoveltiesCount) {
+      this.elements.mobileNoveltiesCount.textContent = noveltiesCount;
+    }
   }
 
   /**
@@ -1493,6 +1503,7 @@ class MercadonaApp {
     this.state.currentPage = newPage;
     this.updateProductsDisplay();
     this.updatePagination();
+    this.savePageState(); // Save page state when page changes
   }
 
 
@@ -1678,6 +1689,9 @@ class MercadonaApp {
     switch (action) {
       case 'cart':
         this.toggleCartPanel();
+        break;
+      case 'novelties':
+        this.showNovelties();
         break;
       case 'filters':
         this.toggleFilters();
@@ -2213,7 +2227,7 @@ class MercadonaApp {
    * Toggle mobile filters (opens sidebar)
    */
   toggleMobileFilters() {
-    const isOpen = this.elements.sidebar?.classList.contains('mobile-open');
+    const isOpen = this.elements.sidebar?.classList.contains('active');
     
     if (isOpen) {
       this.closeMobileFilters();
@@ -2227,7 +2241,7 @@ class MercadonaApp {
    */
   openMobileFilters() {
     if (this.elements.sidebar) {
-      this.elements.sidebar.classList.add('mobile-open');
+      this.elements.sidebar.classList.add('active');
     }
     
     if (this.elements.mobileFiltersFab) {
@@ -2247,7 +2261,7 @@ class MercadonaApp {
    */
   closeMobileFilters() {
     if (this.elements.sidebar) {
-      this.elements.sidebar.classList.remove('mobile-open');
+      this.elements.sidebar.classList.remove('active');
     }
     
     if (this.elements.mobileFiltersFab) {
@@ -2302,6 +2316,74 @@ class MercadonaApp {
       }
     } catch (error) {
       console.warn('Could not restore scroll position:', error);
+    }
+  }
+
+  /**
+   * Save current page state to localStorage
+   */
+  savePageState() {
+    try {
+      const pageState = {
+        currentPage: this.state.currentPage,
+        itemsPerPage: this.state.itemsPerPage,
+        searchQuery: this.state.searchQuery,
+        activeCategory: this.state.activeCategory,
+        showingNovelties: this.state.showingNovelties,
+        sortBy: this.state.currentSort,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(this.STORAGE_KEYS.PAGE_STATE, JSON.stringify(pageState));
+    } catch (error) {
+      console.warn('Could not save page state:', error);
+    }
+  }
+
+  /**
+   * Restore page state from localStorage
+   */
+  restorePageState() {
+    try {
+      const pageStateData = localStorage.getItem(this.STORAGE_KEYS.PAGE_STATE);
+      if (pageStateData) {
+        const pageState = JSON.parse(pageStateData);
+        
+        // Only restore if saved within last hour
+        const oneHour = 60 * 60 * 1000;
+        if (Date.now() - pageState.timestamp < oneHour) {
+          // Restore state
+          this.state.currentPage = pageState.currentPage || 1;
+          this.state.itemsPerPage = pageState.itemsPerPage || 24;
+          this.state.searchQuery = pageState.searchQuery || '';
+          this.state.activeCategory = pageState.activeCategory || null;
+          this.state.showingNovelties = pageState.showingNovelties || false;
+          this.state.currentSort = pageState.sortBy || 'relevance';
+          
+          // Update UI elements
+          if (this.elements.searchInput) {
+            this.elements.searchInput.value = this.state.searchQuery;
+          }
+          if (this.elements.itemsPerPageSelect) {
+            this.elements.itemsPerPageSelect.value = this.state.itemsPerPage;
+          }
+          if (this.elements.sortSelect) {
+            this.elements.sortSelect.value = this.state.currentSort;
+          }
+          
+          // Apply the restored state
+          if (this.state.showingNovelties) {
+            this.showNovelties();
+          } else if (this.state.searchQuery) {
+            this.applyCurrentFilters();
+          } else {
+            this.applyCurrentFilters();
+          }
+          
+          console.log(`📄 Restored page state: page ${this.state.currentPage}`);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not restore page state:', error);
     }
   }
 
