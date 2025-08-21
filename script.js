@@ -37,6 +37,7 @@ class MercadonaApp {
       searchQuery: '',
       activeCategory: null,
       showingNovelties: false,
+      showingDiscounts: false,
       filters: {
         priceMin: null,
         priceMax: null,
@@ -152,14 +153,17 @@ class MercadonaApp {
       cartBtn: '#cart-btn',
       cartCount: '#cart-count',
       mobileNoveltiesCount: '#mobile-novelties-count',
+      mobileDiscountsCount: '#mobile-discounts-count',
       
       // Sidebar
       sidebar: '#sidebar',
       categoryList: '#category-list',
       showAllBtn: '#show-all-btn',
       showNoveltiesBtn: '#show-novelties-btn',
+      showDiscountsBtn: '#show-discounts-btn',
       allCount: '#all-count',
       noveltiesCount: '#novelties-count',
+      discountsCount: '#discounts-count',
       favoritesList: '#favorites-list',
       recentList: '#recent-list',
       
@@ -356,6 +360,11 @@ class MercadonaApp {
       this.elements.showNoveltiesBtn.addEventListener('click', this.showNovelties.bind(this));
     }
 
+    // Discounts button
+    if (this.elements.showDiscountsBtn) {
+      this.elements.showDiscountsBtn.addEventListener('click', this.showDiscounts.bind(this));
+    }
+
     // Filters
     if (this.elements.filtersToggle) {
       this.elements.filtersToggle.addEventListener('click', this.toggleFilters.bind(this));
@@ -526,13 +535,14 @@ class MercadonaApp {
         name: product.name || '',
         subtitle: product.subtitle || '',
         category: product.Category || 'Sin categoría',
-        price: this.utils.formatPrice(product.regular_price || product.price || '0'),
-        originalPrice: product.discounted_price ? this.utils.formatPrice(product.regular_price) : null,
-        discountedPrice: product.discounted_price ? this.utils.formatPrice(product.discounted_price) : null,
+        price: this.utils.formatPrice(product.price || '0'),
+        originalPrice: product.discount_price && product.discount_price !== product.price ? this.utils.formatPrice(product.price) : null,
+        discountedPrice: product.discount_price && product.discount_price !== product.price ? this.utils.formatPrice(product.discount_price) : null,
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
         nutritionalInfo: product.nutritional_info || '',
         isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True' || product.novedad === 'TRUE',
+        hasDiscount: product.discount_price && product.discount_price.trim() !== '' && product.discount_price !== product.price,
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,
@@ -579,9 +589,9 @@ class MercadonaApp {
       this.state.categories.set(category, current + 1);
     });
 
-    // Sort categories by product count (descending)
+    // Sort categories alphabetically
     this.state.categories = new Map(
-      [...this.state.categories.entries()].sort((a, b) => b[1] - a[1])
+      [...this.state.categories.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
     );
   }
 
@@ -590,6 +600,13 @@ class MercadonaApp {
    */
   getNoveltyProducts() {
     return this.state.products.filter(product => product.isNovelty);
+  }
+
+  /**
+   * Get discounted products
+   */
+  getDiscountedProducts() {
+    return this.state.products.filter(product => product.hasDiscount);
   }
 
   /**
@@ -607,6 +624,7 @@ class MercadonaApp {
     this.state.searchQuery = '';
     this.state.activeCategory = null;
     this.state.showingNovelties = true;
+    this.state.showingDiscounts = false;
     this.state.filters.priceMin = null;
     this.state.filters.priceMax = null;
     this.state.filters.categories.clear();
@@ -632,9 +650,63 @@ class MercadonaApp {
     // Update category buttons
     this.updateCategoryButtons(null);
     this.updateNoveltiesUI();
+    this.updateDiscountsUI();
     
     // Show toast with count
     this.utils.showToast(`Mostrando ${noveltyProducts.length} novedades`, 'success');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Save page state
+    this.savePageState();
+  }
+
+  /**
+   * Show discounts section
+   */
+  showDiscounts() {
+    const discountedProducts = this.getDiscountedProducts();
+    
+    if (discountedProducts.length === 0) {
+      this.utils.showToast('No hay productos en descuento disponibles', 'info');
+      return;
+    }
+
+    // Clear current filters and search
+    this.state.searchQuery = '';
+    this.state.activeCategory = null;
+    this.state.showingNovelties = false;
+    this.state.showingDiscounts = true;
+    this.state.filters.priceMin = null;
+    this.state.filters.priceMax = null;
+    this.state.filters.categories.clear();
+    
+    // Set filtered products to only discounted products
+    this.state.filteredProducts = discountedProducts;
+    this.state.currentPage = 1;
+    this.state.totalPages = Math.ceil(discountedProducts.length / this.state.itemsPerPage);
+
+    // Update search input
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = '';
+    }
+    
+    // Update UI
+    this.updateProductsDisplay();
+    this.updatePagination();
+    this.updateResultsCount();
+    this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.hideSearchSuggestions();
+    
+    // Update category buttons
+    this.updateCategoryButtons(null);
+    this.updateNoveltiesUI();
+    this.updateDiscountsUI();
+    
+    // Show toast with count
+    this.utils.showToast(`Mostrando ${discountedProducts.length} productos en descuento`, 'success');
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1070,11 +1142,27 @@ class MercadonaApp {
   }
 
   /**
+   * Update discounts UI
+   */
+  updateDiscountsUI() {
+    if (!this.elements.showDiscountsBtn) return;
+    
+    if (this.state.showingDiscounts) {
+      this.elements.showDiscountsBtn.classList.add('active');
+      this.elements.showAllBtn?.classList.remove('active');
+      this.elements.showNoveltiesBtn?.classList.remove('active');
+    } else {
+      this.elements.showDiscountsBtn.classList.remove('active');
+    }
+  }
+
+  /**
    * Navigate to home - reset all filters and go to top
    */
   goHome() {
     // Reset all filters and search
     this.state.showingNovelties = false;
+    this.state.showingDiscounts = false;
     this.clearSearch();
     this.clearAllFilters();
     
@@ -1215,8 +1303,8 @@ class MercadonaApp {
     const isFavorite = this.state.favorites.has(product.id);
     const isInCart = this.state.cart.has(product.id);
 
-    const displayPrice = product.discountedPrice || product.price;
-    const hasDiscount = product.discountedPrice && product.originalPrice;
+    const displayPrice = product.hasDiscount ? product.discountedPrice : product.price;
+    const hasDiscount = product.hasDiscount;
 
     card.innerHTML = `
       <div class="product-card-image">
@@ -1226,6 +1314,7 @@ class MercadonaApp {
           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='"
         >
         ${product.isNovelty ? '<div class="product-novelty-badge"><span>NUEVO</span></div>' : ''}
+        ${hasDiscount ? '<div class="product-discount-badge"><span>DESCUENTO</span></div>' : ''}
         <div class="product-card-actions">
           <button 
             class="product-action-btn favorite-btn ${isFavorite ? 'active' : ''}"
@@ -1244,8 +1333,8 @@ class MercadonaApp {
         
         <div class="product-card-footer">
           <div class="product-card-price">
-            <span class="product-price-current">${this.utils.formatCurrency(displayPrice)}</span>
-            ${hasDiscount ? `<span class="product-price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+            <span class="product-price-current">${displayPrice}</span>
+            ${hasDiscount ? `<span class="product-price-original">${product.originalPrice}</span>` : ''}
           </div>
           <button 
             class="product-card-cart-btn ${isInCart ? 'added' : ''}"
@@ -1399,6 +1488,15 @@ class MercadonaApp {
     }
     if (this.elements.mobileNoveltiesCount) {
       this.elements.mobileNoveltiesCount.textContent = noveltiesCount;
+    }
+
+    // Update discounts counter
+    const discountsCount = this.getDiscountedProducts().length;
+    if (this.elements.discountsCount) {
+      this.elements.discountsCount.textContent = discountsCount;
+    }
+    if (this.elements.mobileDiscountsCount) {
+      this.elements.mobileDiscountsCount.textContent = discountsCount;
     }
   }
 
@@ -1701,6 +1799,9 @@ class MercadonaApp {
         break;
       case 'novelties':
         this.showNovelties();
+        break;
+      case 'discounts':
+        this.showDiscounts();
         break;
       case 'filters':
         this.toggleFilters();
