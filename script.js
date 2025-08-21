@@ -1333,8 +1333,8 @@ class MercadonaApp {
         
         <div class="product-card-footer">
           <div class="product-card-price">
-            <span class="product-price-current">${displayPrice}</span>
-            ${hasDiscount ? `<span class="product-price-original">${product.originalPrice}</span>` : ''}
+            <span class="product-price-current">${this.utils.formatCurrency(displayPrice)}</span>
+            ${hasDiscount ? `<span class="product-price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
           </div>
           <button 
             class="product-card-cart-btn ${isInCart ? 'added' : ''}"
@@ -1957,7 +1957,21 @@ class MercadonaApp {
           thumbnails.forEach(t => t.classList.remove('active'));
           thumbnail.classList.add('active');
         });
+
+        // Add lightbox functionality to thumbnails (double click)
+        thumbnail.addEventListener('dblclick', () => {
+          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
+          this.openLightbox(images, imageIndex);
+        });
       });
+
+      // Add lightbox functionality to main image
+      if (mainImage) {
+        mainImage.style.cursor = 'pointer';
+        mainImage.addEventListener('click', () => {
+          this.openLightbox(images, parseInt(mainImage.dataset.imageIndex) || 0);
+        });
+      }
     }
   }
 
@@ -2220,6 +2234,141 @@ class MercadonaApp {
 
     // Restore body scroll
     document.body.style.overflow = '';
+  }
+
+  /**
+   * Open lightbox for image viewing
+   */
+  openLightbox(images, currentIndex = 0) {
+    // Create lightbox if it doesn't exist
+    let lightbox = document.getElementById('image-lightbox');
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.id = 'image-lightbox';
+      lightbox.className = 'lightbox';
+      lightbox.innerHTML = `
+        <div class="lightbox-content">
+          <button class="lightbox-close" aria-label="Cerrar lightbox">
+            <i class="fas fa-times"></i>
+          </button>
+          <button class="lightbox-prev" aria-label="Imagen anterior">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <img class="lightbox-image" alt="Imagen ampliada">
+          <button class="lightbox-next" aria-label="Siguiente imagen">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          <div class="lightbox-counter">
+            <span class="current-image">1</span> / <span class="total-images">1</span>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(lightbox);
+
+      // Add event listeners
+      const closeBtn = lightbox.querySelector('.lightbox-close');
+      const prevBtn = lightbox.querySelector('.lightbox-prev');
+      const nextBtn = lightbox.querySelector('.lightbox-next');
+      const lightboxImage = lightbox.querySelector('.lightbox-image');
+
+      closeBtn.addEventListener('click', () => this.closeLightbox());
+      
+      // Close on backdrop click
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+          this.closeLightbox();
+        }
+      });
+
+      // Navigation
+      prevBtn.addEventListener('click', () => this.navigateLightbox(-1));
+      nextBtn.addEventListener('click', () => this.navigateLightbox(1));
+
+      // Keyboard navigation
+      document.addEventListener('keydown', (e) => {
+        if (lightbox.classList.contains('active')) {
+          switch(e.key) {
+            case 'Escape':
+              this.closeLightbox();
+              break;
+            case 'ArrowLeft':
+              this.navigateLightbox(-1);
+              break;
+            case 'ArrowRight':
+              this.navigateLightbox(1);
+              break;
+          }
+        }
+      });
+    }
+
+    // Store images and current index
+    this.lightboxData = {
+      images: images,
+      currentIndex: currentIndex
+    };
+
+    // Show lightbox
+    this.showLightboxImage();
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * Close lightbox
+   */
+  closeLightbox() {
+    const lightbox = document.getElementById('image-lightbox');
+    if (lightbox) {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  /**
+   * Navigate lightbox images
+   */
+  navigateLightbox(direction) {
+    if (!this.lightboxData || !this.lightboxData.images) return;
+
+    const { images } = this.lightboxData;
+    this.lightboxData.currentIndex += direction;
+
+    // Wrap around
+    if (this.lightboxData.currentIndex < 0) {
+      this.lightboxData.currentIndex = images.length - 1;
+    } else if (this.lightboxData.currentIndex >= images.length) {
+      this.lightboxData.currentIndex = 0;
+    }
+
+    this.showLightboxImage();
+  }
+
+  /**
+   * Show current lightbox image
+   */
+  showLightboxImage() {
+    if (!this.lightboxData || !this.lightboxData.images) return;
+
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImage = lightbox.querySelector('.lightbox-image');
+    const currentSpan = lightbox.querySelector('.current-image');
+    const totalSpan = lightbox.querySelector('.total-images');
+    const prevBtn = lightbox.querySelector('.lightbox-prev');
+    const nextBtn = lightbox.querySelector('.lightbox-next');
+
+    const { images, currentIndex } = this.lightboxData;
+
+    // Update image
+    lightboxImage.src = images[currentIndex];
+
+    // Update counter
+    currentSpan.textContent = currentIndex + 1;
+    totalSpan.textContent = images.length;
+
+    // Show/hide navigation buttons
+    prevBtn.style.display = images.length > 1 ? 'block' : 'none';
+    nextBtn.style.display = images.length > 1 ? 'block' : 'none';
   }
 
 
