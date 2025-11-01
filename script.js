@@ -3333,13 +3333,8 @@ class MercadonaApp {
    * Initialize Recipe Assistant Chat
    */
   initializeRecipeChat() {
-    // Check if SecureConfig exists (preferred method)
-    const useSecureConfig = typeof SecureConfig !== 'undefined';
-
     // Check if chat should be enabled
-    const chatEnabled = useSecureConfig
-      ? SecureConfig.isChatEnabled()
-      : (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ENABLE_CHAT !== false);
+    const chatEnabled = typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ENABLE_CHAT !== false;
 
     if (!chatEnabled) {
       console.log('ℹ️ Chat feature is disabled');
@@ -3348,49 +3343,16 @@ class MercadonaApp {
       return;
     }
 
-    // Get API key from SecureConfig or APP_CONFIG
-    let apiKey = null;
-    if (useSecureConfig) {
-      apiKey = SecureConfig.getAPIKey();
-    } else if (typeof APP_CONFIG !== 'undefined') {
-      apiKey = APP_CONFIG.OPENROUTER_API_KEY;
-      if (apiKey === 'YOUR_OPENROUTER_API_KEY_HERE') {
-        apiKey = null;
-      }
-    }
+    // Get API key from APP_CONFIG (comes from GitHub Secrets)
+    const apiKey = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.OPENROUTER_API_KEY !== 'YOUR_OPENROUTER_API_KEY_HERE')
+      ? APP_CONFIG.OPENROUTER_API_KEY
+      : null;
 
-    // Setup chat toggle button
-    const chatToggle = document.getElementById('recipe-chat-toggle');
-    if (!chatToggle) {
-      console.error('❌ Chat toggle button not found');
-      return;
-    }
-
-    // If no API key, show setup modal when user clicks
     if (!apiKey) {
       console.warn('⚠️ OpenRouter API key not configured');
-
-      // Add settings icon badge to indicate configuration needed
-      chatToggle.innerHTML = '<i class="fas fa-comments"></i><span class="badge visible" style="background: var(--color-warning);">!</span>';
-      chatToggle.title = 'Configurar Asistente de Recetas';
-
-      chatToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-
-        if (useSecureConfig) {
-          // Show secure setup modal
-          SecureConfig.showAPIKeySetup((key) => {
-            if (key) {
-              // Reload to initialize chat
-              this.initializeRecipeChat();
-              this.utils.showToast('✅ API key configurada. El chat está listo!', 'success');
-            }
-          });
-        } else {
-          this.utils.showToast('Por favor, configura tu API key de OpenRouter', 'warning');
-        }
-      }, { once: true });
-
+      this.utils.showToast('Chat no disponible: API key no configurada en GitHub Secrets', 'warning');
+      const chatToggle = document.getElementById('recipe-chat-toggle');
+      if (chatToggle) chatToggle.style.display = 'none';
       return;
     }
 
@@ -3407,52 +3369,17 @@ class MercadonaApp {
         this.state.products
       );
 
-      console.log('✅ Recipe Assistant Chat initialized successfully');
+      console.log('✅ Nutrition Assistant Chat initialized successfully');
+      console.log('💪 Using model:', APP_CONFIG.CHAT_MODEL || 'default');
 
       // Update chat when products are loaded
       if (this.state.products.length > 0) {
         window.recipeChat.updateProducts(this.state.products);
       }
 
-      // Add settings button to chat header
-      this.addChatSettingsButton();
-
     } catch (error) {
-      console.error('❌ Failed to initialize Recipe Assistant Chat:', error);
-      this.utils.showToast('Error al inicializar el asistente de recetas', 'error');
-    }
-  }
-
-  /**
-   * Add settings button to chat for API key management
-   */
-  addChatSettingsButton() {
-    if (typeof SecureConfig === 'undefined') return;
-
-    const chatHeader = document.querySelector('.recipe-chat-header-actions');
-    if (!chatHeader) return;
-
-    // Check if button already exists
-    if (document.getElementById('recipe-chat-settings')) return;
-
-    const settingsBtn = document.createElement('button');
-    settingsBtn.id = 'recipe-chat-settings';
-    settingsBtn.className = 'recipe-chat-header-btn';
-    settingsBtn.setAttribute('aria-label', 'Configuración');
-    settingsBtn.setAttribute('title', 'Configuración del chat');
-    settingsBtn.innerHTML = '<i class="fas fa-cog"></i>';
-
-    settingsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      SecureConfig.showAPIKeyManagement();
-    });
-
-    // Insert before clear button
-    const clearBtn = document.getElementById('recipe-chat-clear');
-    if (clearBtn) {
-      chatHeader.insertBefore(settingsBtn, clearBtn);
-    } else {
-      chatHeader.prepend(settingsBtn);
+      console.error('❌ Failed to initialize Nutrition Assistant Chat:', error);
+      this.utils.showToast('Error al inicializar el asistente nutricional', 'error');
     }
   }
 }
