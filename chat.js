@@ -284,8 +284,30 @@ Responde en español, tono amigable y profesional. ¡Ayuda a lograr objetivos co
       const response = await this.getAIResponse(sanitizedMessage);
       this.addMessage('assistant', response);
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      this.addMessage('assistant', 'Lo siento, ha ocurrido un error al procesar tu mensaje. Por favor, intenta de nuevo.');
+      console.error('❌ Error getting AI response:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        apiKey: this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'undefined',
+        model: this.model
+      });
+
+      // More specific error messages
+      let errorMessage = 'Lo siento, ha ocurrido un error al procesar tu mensaje.';
+
+      if (error.message.includes('API Error: 401')) {
+        errorMessage = '🔒 **Error de autenticación**: Tu API key no es válida. Verifica tu configuración en config.js';
+      } else if (error.message.includes('API Error: 429')) {
+        errorMessage = '⚠️ **Límite excedido**: Has superado el límite de tu plan. Intenta más tarde o actualiza tu plan.';
+      } else if (error.message.includes('API Error: 500')) {
+        errorMessage = '⚠️ **Error del servidor**: El servicio está temporalmente no disponible. Intenta de nuevo en unos minutos.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = '🌐 **Error de conexión**: No se puede conectar con el servidor. Verifica tu conexión a internet.';
+      } else {
+        errorMessage = `❌ **Error**: ${error.message}\n\nPor favor, intenta de nuevo o contacta soporte.`;
+      }
+
+      this.addMessage('assistant', errorMessage);
     } finally {
       this.setLoading(false);
     }
