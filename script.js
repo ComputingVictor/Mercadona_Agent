@@ -3384,6 +3384,33 @@ class MercadonaApp {
   }
 }
 
+// Global function to open product modal from chat links
+window.openProductFromChat = function(productId) {
+  if (!window.mercadonaApp) {
+    console.error('App not initialized');
+    return;
+  }
+
+  // Find product by ID or by name-based ID
+  const product = window.mercadonaApp.state.products.find(p => {
+    const id = p.id || (p.display_name || p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+    return id === productId;
+  });
+
+  if (product) {
+    // Close chat
+    if (window.recipeChat && window.recipeChat.isOpen) {
+      window.recipeChat.closeChat();
+    }
+
+    // Open product modal
+    window.mercadonaApp.showProductDetail(product);
+  } else {
+    console.warn('Product not found:', productId);
+    window.mercadonaApp.utils.showToast('Producto no encontrado', 'warning');
+  }
+};
+
 // CSS animations for toast and other elements
 const animations = `
 @keyframes slideOutRight {

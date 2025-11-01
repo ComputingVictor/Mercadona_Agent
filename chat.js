@@ -276,15 +276,75 @@ Responde en español con tono amigable y profesional. ¡Ayuda a lograr objetivos
   }
 
   /**
-   * Format message content (basic markdown support)
+   * Format message content (basic markdown support + product links)
    */
   formatMessage(text) {
-    return text
+    // First apply basic markdown
+    let formatted = text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/\n/g, '<br>') // Line breaks
       .replace(/^- (.+)$/gm, '<li>$1</li>') // List items
       .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Wrap lists
+
+    // Now convert product names to clickable links
+    formatted = this.linkifyProducts(formatted);
+
+    return formatted;
+  }
+
+  /**
+   * Convert product names in text to clickable links
+   */
+  linkifyProducts(text) {
+    if (!this.productsData || this.productsData.length === 0) {
+      return text;
+    }
+
+    // Create a map of product names to product data for quick lookup
+    const productMap = new Map();
+    this.productsData.forEach(product => {
+      const name = (product.display_name || product.name || '').toLowerCase();
+      if (name) {
+        productMap.set(name, product);
+      }
+    });
+
+    // Sort products by name length (longest first) to match longer names first
+    const sortedProducts = Array.from(productMap.entries())
+      .sort((a, b) => b[0].length - a[0].length);
+
+    // Replace product names with clickable links
+    let result = text;
+    sortedProducts.forEach(([productName, product]) => {
+      // Create a case-insensitive regex that matches the product name
+      // Use word boundaries to avoid partial matches
+      const regex = new RegExp(`\\b(${this.escapeRegex(productName)})\\b`, 'gi');
+
+      result = result.replace(regex, (match) => {
+        // Generate a unique ID for the product if it doesn't have one
+        const productId = product.id || this.generateProductId(product);
+
+        return `<a href="#" class="product-link" data-product-id="${productId}" onclick="window.openProductFromChat('${productId}'); return false;">${match}</a>`;
+      });
+    });
+
+    return result;
+  }
+
+  /**
+   * Escape special regex characters
+   */
+  escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Generate a simple ID for a product based on its name
+   */
+  generateProductId(product) {
+    const name = (product.display_name || product.name || '').toLowerCase();
+    return name.replace(/[^a-z0-9]/g, '-');
   }
 
   /**
