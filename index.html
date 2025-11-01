@@ -21,6 +21,7 @@
   
   <!-- Main stylesheet -->
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="chat.css">
   
   <!-- PWA Meta tags -->
   <meta name="theme-color" content="#22c55e">
@@ -163,6 +164,12 @@
           <span class="mobile-badge" id="mobile-novelties-count">0</span>
         </button>
         
+        <button class="mobile-menu-item" data-action="discounts">
+          <i class="fas fa-percent" aria-hidden="true"></i>
+          <span>Descuentos</span>
+          <span class="mobile-badge mobile-badge--discount" id="mobile-discounts-count">0</span>
+        </button>
+        
         <button class="mobile-menu-item" data-action="filters">
           <i class="fas fa-filter" aria-hidden="true"></i>
           <span>Filtros y categorías</span>
@@ -203,6 +210,12 @@
             <i class="fas fa-star" aria-hidden="true"></i>
             <span>Novedades</span>
             <span class="category-count" id="novelties-count">0</span>
+          </button>
+          
+          <button id="show-discounts-btn" class="category-btn category-btn--discounts">
+            <i class="fas fa-percent" aria-hidden="true"></i>
+            <span>Descuentos</span>
+            <span class="category-count" id="discounts-count">0</span>
           </button>
           
           <ul id="category-list" class="category-list" role="list"></ul>
@@ -447,8 +460,67 @@
   <!-- Toast Notifications -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
+  <!-- Recipe Assistant Chat -->
+  <div id="recipe-chat-container" class="recipe-chat-container" aria-hidden="true">
+    <div class="recipe-chat-header">
+      <div class="recipe-chat-header-title">
+        <i class="fas fa-dumbbell"></i>
+        <h3>Nutrición Mercadona</h3>
+      </div>
+      <div class="recipe-chat-header-actions">
+        <button
+          id="recipe-chat-clear"
+          class="recipe-chat-header-btn"
+          aria-label="Limpiar conversación"
+          title="Limpiar conversación"
+        >
+          <i class="fas fa-trash-alt"></i>
+        </button>
+        <button
+          id="recipe-chat-close"
+          class="recipe-chat-header-btn"
+          aria-label="Cerrar chat"
+          title="Cerrar chat"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="recipe-chat-messages" class="recipe-chat-messages"></div>
+
+    <div class="recipe-chat-input-area">
+      <textarea
+        id="recipe-chat-input"
+        placeholder="Ej: Estoy en volumen, ¿qué debo comprar?"
+        rows="1"
+        aria-label="Escribe tu mensaje"
+      ></textarea>
+      <button
+        id="recipe-chat-send"
+        aria-label="Enviar mensaje"
+        title="Enviar mensaje"
+      >
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Recipe Chat Toggle Button -->
+  <button
+    id="recipe-chat-toggle"
+    aria-label="Abrir asistente nutricional"
+    aria-expanded="false"
+    title="Asistente Nutricional IA"
+  >
+    <i class="fas fa-dumbbell"></i>
+  </button>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+  <script src="config.js" defer></script>
+  <script src="config-secure.js" defer></script>
+  <script src="chat.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>

@@ -37,6 +37,7 @@ class MercadonaApp {
       searchQuery: '',
       activeCategory: null,
       showingNovelties: false,
+      showingDiscounts: false,
       filters: {
         priceMin: null,
         priceMax: null,
@@ -119,6 +120,9 @@ class MercadonaApp {
       
       this.state.initialized = true;
       console.log('🚀 Mercadona App v0.2 initialized successfully');
+
+      // Initialize Recipe Assistant Chat
+      this.initializeRecipeChat();
     } catch (error) {
       console.error('❌ Failed to initialize app:', error);
       this.utils.showToast('Error al cargar la aplicación', 'error');
@@ -152,14 +156,17 @@ class MercadonaApp {
       cartBtn: '#cart-btn',
       cartCount: '#cart-count',
       mobileNoveltiesCount: '#mobile-novelties-count',
+      mobileDiscountsCount: '#mobile-discounts-count',
       
       // Sidebar
       sidebar: '#sidebar',
       categoryList: '#category-list',
       showAllBtn: '#show-all-btn',
       showNoveltiesBtn: '#show-novelties-btn',
+      showDiscountsBtn: '#show-discounts-btn',
       allCount: '#all-count',
       noveltiesCount: '#novelties-count',
+      discountsCount: '#discounts-count',
       favoritesList: '#favorites-list',
       recentList: '#recent-list',
       
@@ -356,6 +363,11 @@ class MercadonaApp {
       this.elements.showNoveltiesBtn.addEventListener('click', this.showNovelties.bind(this));
     }
 
+    // Discounts button
+    if (this.elements.showDiscountsBtn) {
+      this.elements.showDiscountsBtn.addEventListener('click', this.showDiscounts.bind(this));
+    }
+
     // Filters
     if (this.elements.filtersToggle) {
       this.elements.filtersToggle.addEventListener('click', this.toggleFilters.bind(this));
@@ -526,13 +538,14 @@ class MercadonaApp {
         name: product.name || '',
         subtitle: product.subtitle || '',
         category: product.Category || 'Sin categoría',
-        price: this.utils.formatPrice(product.regular_price || product.price || '0'),
-        originalPrice: product.discounted_price ? this.utils.formatPrice(product.regular_price) : null,
-        discountedPrice: product.discounted_price ? this.utils.formatPrice(product.discounted_price) : null,
+        price: this.utils.formatPrice(product.price || '0'),
+        originalPrice: product.discount_price && product.discount_price !== product.price ? this.utils.formatPrice(product.price) : null,
+        discountedPrice: product.discount_price && product.discount_price !== product.price ? this.utils.formatPrice(product.discount_price) : null,
         image: product.image_url || product.main_image_url || '',
         secondaryImage: product.secondary_image_url || '',
         nutritionalInfo: product.nutritional_info || '',
         isNovelty: product.novedad === true || product.novedad === 'true' || product.novedad === 'True' || product.novedad === 'TRUE',
+        hasDiscount: product.discount_price && product.discount_price.trim() !== '' && product.discount_price !== product.price,
         searchTerms: this.generateSearchTerms(product),
         // Additional fields for filtering and sorting
         relevanceScore: 1,
@@ -579,9 +592,9 @@ class MercadonaApp {
       this.state.categories.set(category, current + 1);
     });
 
-    // Sort categories by product count (descending)
+    // Sort categories alphabetically
     this.state.categories = new Map(
-      [...this.state.categories.entries()].sort((a, b) => b[1] - a[1])
+      [...this.state.categories.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
     );
   }
 
@@ -590,6 +603,13 @@ class MercadonaApp {
    */
   getNoveltyProducts() {
     return this.state.products.filter(product => product.isNovelty);
+  }
+
+  /**
+   * Get discounted products
+   */
+  getDiscountedProducts() {
+    return this.state.products.filter(product => product.hasDiscount);
   }
 
   /**
@@ -607,6 +627,7 @@ class MercadonaApp {
     this.state.searchQuery = '';
     this.state.activeCategory = null;
     this.state.showingNovelties = true;
+    this.state.showingDiscounts = false;
     this.state.filters.priceMin = null;
     this.state.filters.priceMax = null;
     this.state.filters.categories.clear();
@@ -632,9 +653,63 @@ class MercadonaApp {
     // Update category buttons
     this.updateCategoryButtons(null);
     this.updateNoveltiesUI();
+    this.updateDiscountsUI();
     
     // Show toast with count
     this.utils.showToast(`Mostrando ${noveltyProducts.length} novedades`, 'success');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Save page state
+    this.savePageState();
+  }
+
+  /**
+   * Show discounts section
+   */
+  showDiscounts() {
+    const discountedProducts = this.getDiscountedProducts();
+    
+    if (discountedProducts.length === 0) {
+      this.utils.showToast('No hay productos en descuento disponibles', 'info');
+      return;
+    }
+
+    // Clear current filters and search
+    this.state.searchQuery = '';
+    this.state.activeCategory = null;
+    this.state.showingNovelties = false;
+    this.state.showingDiscounts = true;
+    this.state.filters.priceMin = null;
+    this.state.filters.priceMax = null;
+    this.state.filters.categories.clear();
+    
+    // Set filtered products to only discounted products
+    this.state.filteredProducts = discountedProducts;
+    this.state.currentPage = 1;
+    this.state.totalPages = Math.ceil(discountedProducts.length / this.state.itemsPerPage);
+
+    // Update search input
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = '';
+    }
+    
+    // Update UI
+    this.updateProductsDisplay();
+    this.updatePagination();
+    this.updateResultsCount();
+    this.updateEmptyState();
+    this.updateAriaLiveRegion();
+    this.hideSearchSuggestions();
+    
+    // Update category buttons
+    this.updateCategoryButtons(null);
+    this.updateNoveltiesUI();
+    this.updateDiscountsUI();
+    
+    // Show toast with count
+    this.utils.showToast(`Mostrando ${discountedProducts.length} productos en descuento`, 'success');
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1070,11 +1145,27 @@ class MercadonaApp {
   }
 
   /**
+   * Update discounts UI
+   */
+  updateDiscountsUI() {
+    if (!this.elements.showDiscountsBtn) return;
+    
+    if (this.state.showingDiscounts) {
+      this.elements.showDiscountsBtn.classList.add('active');
+      this.elements.showAllBtn?.classList.remove('active');
+      this.elements.showNoveltiesBtn?.classList.remove('active');
+    } else {
+      this.elements.showDiscountsBtn.classList.remove('active');
+    }
+  }
+
+  /**
    * Navigate to home - reset all filters and go to top
    */
   goHome() {
     // Reset all filters and search
     this.state.showingNovelties = false;
+    this.state.showingDiscounts = false;
     this.clearSearch();
     this.clearAllFilters();
     
@@ -1215,8 +1306,8 @@ class MercadonaApp {
     const isFavorite = this.state.favorites.has(product.id);
     const isInCart = this.state.cart.has(product.id);
 
-    const displayPrice = product.discountedPrice || product.price;
-    const hasDiscount = product.discountedPrice && product.originalPrice;
+    const displayPrice = product.hasDiscount ? product.discountedPrice : product.price;
+    const hasDiscount = product.hasDiscount;
 
     card.innerHTML = `
       <div class="product-card-image">
@@ -1226,6 +1317,7 @@ class MercadonaApp {
           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='"
         >
         ${product.isNovelty ? '<div class="product-novelty-badge"><span>NUEVO</span></div>' : ''}
+        ${hasDiscount ? '<div class="product-discount-badge"><span>DESCUENTO</span></div>' : ''}
         <div class="product-card-actions">
           <button 
             class="product-action-btn favorite-btn ${isFavorite ? 'active' : ''}"
@@ -1399,6 +1491,15 @@ class MercadonaApp {
     }
     if (this.elements.mobileNoveltiesCount) {
       this.elements.mobileNoveltiesCount.textContent = noveltiesCount;
+    }
+
+    // Update discounts counter
+    const discountsCount = this.getDiscountedProducts().length;
+    if (this.elements.discountsCount) {
+      this.elements.discountsCount.textContent = discountsCount;
+    }
+    if (this.elements.mobileDiscountsCount) {
+      this.elements.mobileDiscountsCount.textContent = discountsCount;
     }
   }
 
@@ -1702,6 +1803,9 @@ class MercadonaApp {
       case 'novelties':
         this.showNovelties();
         break;
+      case 'discounts':
+        this.showDiscounts();
+        break;
       case 'filters':
         this.toggleFilters();
         break;
@@ -1856,7 +1960,21 @@ class MercadonaApp {
           thumbnails.forEach(t => t.classList.remove('active'));
           thumbnail.classList.add('active');
         });
+
+        // Add lightbox functionality to thumbnails (double click)
+        thumbnail.addEventListener('dblclick', () => {
+          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
+          this.openLightbox(images, imageIndex);
+        });
       });
+
+      // Add lightbox functionality to main image
+      if (mainImage) {
+        mainImage.style.cursor = 'pointer';
+        mainImage.addEventListener('click', () => {
+          this.openLightbox(images, parseInt(mainImage.dataset.imageIndex) || 0);
+        });
+      }
     }
   }
 
@@ -2119,6 +2237,141 @@ class MercadonaApp {
 
     // Restore body scroll
     document.body.style.overflow = '';
+  }
+
+  /**
+   * Open lightbox for image viewing
+   */
+  openLightbox(images, currentIndex = 0) {
+    // Create lightbox if it doesn't exist
+    let lightbox = document.getElementById('image-lightbox');
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.id = 'image-lightbox';
+      lightbox.className = 'lightbox';
+      lightbox.innerHTML = `
+        <div class="lightbox-content">
+          <button class="lightbox-close" aria-label="Cerrar lightbox">
+            <i class="fas fa-times"></i>
+          </button>
+          <button class="lightbox-prev" aria-label="Imagen anterior">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <img class="lightbox-image" alt="Imagen ampliada">
+          <button class="lightbox-next" aria-label="Siguiente imagen">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          <div class="lightbox-counter">
+            <span class="current-image">1</span> / <span class="total-images">1</span>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(lightbox);
+
+      // Add event listeners
+      const closeBtn = lightbox.querySelector('.lightbox-close');
+      const prevBtn = lightbox.querySelector('.lightbox-prev');
+      const nextBtn = lightbox.querySelector('.lightbox-next');
+      const lightboxImage = lightbox.querySelector('.lightbox-image');
+
+      closeBtn.addEventListener('click', () => this.closeLightbox());
+      
+      // Close on backdrop click
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+          this.closeLightbox();
+        }
+      });
+
+      // Navigation
+      prevBtn.addEventListener('click', () => this.navigateLightbox(-1));
+      nextBtn.addEventListener('click', () => this.navigateLightbox(1));
+
+      // Keyboard navigation
+      document.addEventListener('keydown', (e) => {
+        if (lightbox.classList.contains('active')) {
+          switch(e.key) {
+            case 'Escape':
+              this.closeLightbox();
+              break;
+            case 'ArrowLeft':
+              this.navigateLightbox(-1);
+              break;
+            case 'ArrowRight':
+              this.navigateLightbox(1);
+              break;
+          }
+        }
+      });
+    }
+
+    // Store images and current index
+    this.lightboxData = {
+      images: images,
+      currentIndex: currentIndex
+    };
+
+    // Show lightbox
+    this.showLightboxImage();
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * Close lightbox
+   */
+  closeLightbox() {
+    const lightbox = document.getElementById('image-lightbox');
+    if (lightbox) {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  /**
+   * Navigate lightbox images
+   */
+  navigateLightbox(direction) {
+    if (!this.lightboxData || !this.lightboxData.images) return;
+
+    const { images } = this.lightboxData;
+    this.lightboxData.currentIndex += direction;
+
+    // Wrap around
+    if (this.lightboxData.currentIndex < 0) {
+      this.lightboxData.currentIndex = images.length - 1;
+    } else if (this.lightboxData.currentIndex >= images.length) {
+      this.lightboxData.currentIndex = 0;
+    }
+
+    this.showLightboxImage();
+  }
+
+  /**
+   * Show current lightbox image
+   */
+  showLightboxImage() {
+    if (!this.lightboxData || !this.lightboxData.images) return;
+
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImage = lightbox.querySelector('.lightbox-image');
+    const currentSpan = lightbox.querySelector('.current-image');
+    const totalSpan = lightbox.querySelector('.total-images');
+    const prevBtn = lightbox.querySelector('.lightbox-prev');
+    const nextBtn = lightbox.querySelector('.lightbox-next');
+
+    const { images, currentIndex } = this.lightboxData;
+
+    // Update image
+    lightboxImage.src = images[currentIndex];
+
+    // Update counter
+    currentSpan.textContent = currentIndex + 1;
+    totalSpan.textContent = images.length;
+
+    // Show/hide navigation buttons
+    prevBtn.style.display = images.length > 1 ? 'block' : 'none';
+    nextBtn.style.display = images.length > 1 ? 'block' : 'none';
   }
 
 
@@ -3075,7 +3328,98 @@ class MercadonaApp {
       }, 300);
     }
   }
+
+  /**
+   * Initialize Recipe Assistant Chat
+   */
+  initializeRecipeChat() {
+    // Check if chat should be enabled
+    const chatEnabled = typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ENABLE_CHAT !== false;
+
+    if (!chatEnabled) {
+      console.log('ℹ️ Chat feature is disabled');
+      const chatToggle = document.getElementById('recipe-chat-toggle');
+      if (chatToggle) chatToggle.style.display = 'none';
+      return;
+    }
+
+    // Get API key from APP_CONFIG (comes from GitHub Secrets)
+    const apiKey = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.OPENROUTER_API_KEY !== 'YOUR_OPENROUTER_API_KEY_HERE')
+      ? APP_CONFIG.OPENROUTER_API_KEY
+      : null;
+
+    if (!apiKey) {
+      console.warn('⚠️ OpenRouter API key not configured');
+
+      // Show button but with warning badge
+      const chatToggle = document.getElementById('recipe-chat-toggle');
+      if (chatToggle) {
+        chatToggle.innerHTML = '<i class="fas fa-dumbbell"></i><span class="badge visible" style="background: var(--color-warning);">!</span>';
+        chatToggle.title = 'Configurar API Key';
+
+        // Add click handler to show instructions
+        chatToggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.utils.showToast('Para desarrollo local: Configura tu API key en config.js', 'warning');
+        }, { once: true });
+      }
+      return;
+    }
+
+    // Check if RecipeAssistantChat class exists
+    if (typeof RecipeAssistantChat === 'undefined') {
+      console.error('❌ RecipeAssistantChat class not loaded');
+      return;
+    }
+
+    try {
+      // Initialize chat with API key and products data
+      window.recipeChat = new RecipeAssistantChat(
+        apiKey,
+        this.state.products
+      );
+
+      console.log('✅ Nutrition Assistant Chat initialized successfully');
+      console.log('💪 Using model:', APP_CONFIG.CHAT_MODEL || 'default');
+
+      // Update chat when products are loaded
+      if (this.state.products.length > 0) {
+        window.recipeChat.updateProducts(this.state.products);
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to initialize Nutrition Assistant Chat:', error);
+      this.utils.showToast('Error al inicializar el asistente nutricional', 'error');
+    }
+  }
 }
+
+// Global function to open product modal from chat links
+window.openProductFromChat = function(productId) {
+  if (!window.mercadonaApp) {
+    console.error('App not initialized');
+    return;
+  }
+
+  // Find product by ID or by name-based ID
+  const product = window.mercadonaApp.state.products.find(p => {
+    const id = p.id || (p.display_name || p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+    return id === productId;
+  });
+
+  if (product) {
+    // Close chat
+    if (window.recipeChat && window.recipeChat.isOpen) {
+      window.recipeChat.closeChat();
+    }
+
+    // Open product modal
+    window.mercadonaApp.showProductDetail(product);
+  } else {
+    console.warn('Product not found:', productId);
+    window.mercadonaApp.utils.showToast('Producto no encontrado', 'warning');
+  }
+};
 
 // CSS animations for toast and other elements
 const animations = `
