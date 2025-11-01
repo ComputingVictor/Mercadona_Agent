@@ -201,6 +201,30 @@ Responde en español con tono amigable y profesional. ¡Ayuda a lograr objetivos
    * Get AI response from OpenRouter
    */
   async getAIResponse(userMessage) {
+    // Check if in DEMO mode
+    if (this.apiKey === 'DEMO_MODE') {
+      return `🔒 **Modo Demo**
+
+Para usar el chat necesitas configurar una API key de OpenRouter.
+
+**Opciones:**
+
+1. **Desarrollo Local:**
+   - Edita el archivo \`config.js\`
+   - Pon tu API key de OpenRouter
+   - Recarga la página
+
+2. **Producción (GitHub Pages):**
+   - Ve a Settings > Secrets and variables > Actions
+   - Agrega \`OPENROUTER_API_KEY\` con tu API key
+   - El chat funcionará automáticamente
+
+**Consigue tu API key gratis:**
+👉 https://openrouter.ai/keys
+
+Modelos gratuitos disponibles: Llama 3.1, Gemini Flash`;
+    }
+
     // Build messages array with system prompt
     const messagesForAPI = [
       {
