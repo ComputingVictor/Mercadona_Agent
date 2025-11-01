@@ -232,13 +232,127 @@
   font-style: italic;
 }
 
-.chat-message-content ul {
+/* Headers */
+.chat-message-content h1,
+.chat-message-content h2,
+.chat-message-content h3 {
+  margin: var(--space-3) 0 var(--space-2) 0;
+  line-height: 1.3;
+  font-weight: var(--font-weight-bold);
+}
+
+.chat-message-content h1 {
+  font-size: var(--font-size-xl);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: var(--space-2);
+}
+
+.chat-message-content h2 {
+  font-size: var(--font-size-lg);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-1);
+}
+
+.chat-message-content h3 {
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+}
+
+/* Lists */
+.chat-message-content ul,
+.chat-message-content ol {
   margin: var(--space-2) 0;
-  padding-left: var(--space-4);
+  padding-left: var(--space-5);
+}
+
+.chat-message-content ul {
+  list-style-type: disc;
+}
+
+.chat-message-content ol {
+  list-style-type: decimal;
 }
 
 .chat-message-content li {
   margin: var(--space-1) 0;
+  padding-left: var(--space-1);
+}
+
+.chat-message-content li::marker {
+  color: var(--color-primary);
+}
+
+/* Code blocks and inline code */
+.chat-message-content code {
+  background: var(--bg-tertiary);
+  color: var(--color-primary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 0.9em;
+  border: 1px solid var(--border-color);
+}
+
+.chat-message-content pre {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+}
+
+.chat-message-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* Links */
+.chat-message-content a:not(.product-link) {
+  color: var(--color-primary);
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+.chat-message-content a:not(.product-link):hover {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+/* User message adjustments for white text */
+.chat-message--user .chat-message-content h1,
+.chat-message--user .chat-message-content h2,
+.chat-message--user .chat-message-content h3 {
+  color: var(--color-white);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-message--user .chat-message-content code {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-message--user .chat-message-content pre {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-message--user .chat-message-content pre code {
+  color: var(--color-white);
+}
+
+.chat-message--user .chat-message-content li::marker {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-message--user .chat-message-content a:not(.product-link) {
+  color: var(--color-white);
+  text-decoration-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Product links in messages */

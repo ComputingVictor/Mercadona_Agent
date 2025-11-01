@@ -41,11 +41,6 @@ class RecipeAssistantChat {
       .map(p => `- ${p.display_name || p.name} (${p.category}) - ${p.price || 'N/A'}€`)
       .join('\n');
 
-    // Get unique product names for strict validation
-    const productNames = this.productsData
-      .map(p => (p.display_name || p.name || '').toLowerCase())
-      .filter(name => name.length > 0);
-
     return `Eres un asistente nutricional especializado en productos de Mercadona.
 
 ⚠️ REGLA FUNDAMENTAL - LEE ESTO PRIMERO:
@@ -316,16 +311,77 @@ Modelos gratuitos disponibles: Llama 3.1, Gemini Flash`;
   }
 
   /**
-   * Format message content (basic markdown support + product links)
+   * Format message content (markdown support + product links)
    */
   formatMessage(text) {
-    // First apply basic markdown
+    // Escape HTML first to prevent XSS
     let formatted = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-      .replace(/\n/g, '<br>') // Line breaks
-      .replace(/^- (.+)$/gm, '<li>$1</li>') // List items
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Wrap lists
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Process markdown elements in order
+    // 1. Code blocks (```code```)
+    formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+    // 2. Inline code (`code`)
+    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // 3. Headers (## Header, ### Header, etc.)
+    formatted = formatted.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
+    formatted = formatted.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+    formatted = formatted.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+
+    // 4. Bold (**text**)
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // 5. Italic (*text* or _text_)
+    formatted = formatted.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+    formatted = formatted.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+    // 6. Links [text](url)
+    formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // 7. Process lists properly
+    // Split into lines for better list processing
+    const lines = formatted.split('\n');
+    let inList = false;
+    let processedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isListItem = /^[\s]*[-*]\s+(.+)/.test(line);
+      const numberedListItem = /^[\s]*\d+\.\s+(.+)/.test(line);
+
+      if (isListItem || numberedListItem) {
+        if (!inList) {
+          processedLines.push(numberedListItem ? '<ol>' : '<ul>');
+          inList = numberedListItem ? 'ol' : 'ul';
+        }
+        const content = isListItem
+          ? line.replace(/^[\s]*[-*]\s+(.+)/, '$1')
+          : line.replace(/^[\s]*\d+\.\s+(.+)/, '$1');
+        processedLines.push(`<li>${content}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push(inList === 'ol' ? '</ol>' : '</ul>');
+          inList = false;
+        }
+        processedLines.push(line);
+      }
+    }
+
+    // Close list if still open
+    if (inList) {
+      processedLines.push(inList === 'ol' ? '</ol>' : '</ul>');
+    }
+
+    formatted = processedLines.join('\n');
+
+    // 8. Line breaks (convert \n to <br>, but not inside lists or headers)
+    formatted = formatted.replace(/\n(?!<\/?(ul|ol|li|h[1-3]|pre|code))/g, '<br>');
+
+    // 9. Emojis - ensure they're properly displayed (they should work as-is in HTML)
 
     // Now convert product names to clickable links
     formatted = this.linkifyProducts(formatted);
