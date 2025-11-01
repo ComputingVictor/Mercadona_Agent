@@ -1,0 +1,386 @@
+/**
+ * RECIPE ASSISTANT CHAT MODULE
+ * =====================================
+ *
+ * AI-powered recipe assistant using OpenRouter API
+ * Helps users find recipes based on Mercadona products only
+ *
+ * @version 1.0.0
+ */
+
+class RecipeAssistantChat {
+  constructor(apiKey, productsData) {
+    this.apiKey = apiKey;
+    this.productsData = productsData || [];
+    this.messages = [];
+    this.isOpen = false;
+    this.isLoading = false;
+
+    // OpenRouter API configuration
+    this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+
+    // Get model from SecureConfig if available
+    this.model = (typeof SecureConfig !== 'undefined')
+      ? SecureConfig.getChatModel()
+      : 'anthropic/claude-3.5-sonnet';
+
+    // System prompt - only suggest recipes with Mercadona products
+    this.systemPrompt = this.buildSystemPrompt();
+
+    // Initialize
+    this.init();
+  }
+
+  /**
+   * Build system prompt with product information
+   */
+  buildSystemPrompt() {
+    // Get list of available products
+    const productList = this.productsData
+      .slice(0, 200) // Limit to avoid token overflow
+      .map(p => `- ${p.display_name || p.name} (${p.category})`)
+      .join('\n');
+
+    return `Eres un asistente de recetas de cocina especializado en productos de Mercadona.
+
+REGLAS ESTRICTAS:
+1. SOLO puedes sugerir recetas que utilicen productos disponibles en Mercadona
+2. Si NO estás seguro de que un ingrediente esté disponible en Mercadona, NO lo sugieras
+3. Si el usuario pregunta sobre productos que no existen en Mercadona, indícale que solo trabajas con productos de Mercadona
+4. Si no tienes información suficiente, di claramente que no estás seguro
+5. NUNCA inventes información sobre productos o disponibilidad
+
+PRODUCTOS DISPONIBLES EN MERCADONA (muestra):
+${productList}
+
+CAPACIDADES:
+- Sugerir recetas con productos de Mercadona
+- Adaptar recetas según preferencias dietéticas
+- Proporcionar alternativas con productos disponibles
+- Calcular cantidades aproximadas
+
+FORMATO DE RESPUESTA:
+- Sé claro y conciso
+- Lista los ingredientes necesarios (solo productos de Mercadona)
+- Proporciona pasos de preparación
+- Si no puedes ayudar con algo, dilo claramente
+
+Responde siempre en español de forma amigable y útil.`;
+  }
+
+  /**
+   * Initialize chat interface
+   */
+  init() {
+    this.createChatUI();
+    this.attachEventListeners();
+    this.loadChatHistory();
+  }
+
+  /**
+   * Create chat UI elements
+   */
+  createChatUI() {
+    // Chat container already exists in HTML, just get references
+    this.elements = {
+      container: document.getElementById('recipe-chat-container'),
+      toggle: document.getElementById('recipe-chat-toggle'),
+      close: document.getElementById('recipe-chat-close'),
+      messages: document.getElementById('recipe-chat-messages'),
+      input: document.getElementById('recipe-chat-input'),
+      sendBtn: document.getElementById('recipe-chat-send'),
+      clearBtn: document.getElementById('recipe-chat-clear')
+    };
+  }
+
+  /**
+   * Attach event listeners
+   */
+  attachEventListeners() {
+    // Toggle chat
+    this.elements.toggle.addEventListener('click', () => this.toggleChat());
+    this.elements.close.addEventListener('click', () => this.closeChat());
+
+    // Send message
+    this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
+    this.elements.input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage();
+      }
+    });
+
+    // Clear chat
+    this.elements.clearBtn.addEventListener('click', () => this.clearChat());
+
+    // Auto-resize textarea
+    this.elements.input.addEventListener('input', () => {
+      this.elements.input.style.height = 'auto';
+      this.elements.input.style.height = Math.min(this.elements.input.scrollHeight, 120) + 'px';
+    });
+  }
+
+  /**
+   * Toggle chat open/close
+   */
+  toggleChat() {
+    if (this.isOpen) {
+      this.closeChat();
+    } else {
+      this.openChat();
+    }
+  }
+
+  /**
+   * Open chat
+   */
+  openChat() {
+    this.isOpen = true;
+    this.elements.container.classList.add('active');
+    this.elements.toggle.setAttribute('aria-expanded', 'true');
+    this.elements.input.focus();
+
+    // Show welcome message if empty
+    if (this.messages.length === 0) {
+      this.addMessage('assistant', '¡Hola! Soy tu asistente de recetas con productos de Mercadona. ¿Qué te gustaría cocinar hoy? 👨‍🍳');
+    }
+  }
+
+  /**
+   * Close chat
+   */
+  closeChat() {
+    this.isOpen = false;
+    this.elements.container.classList.remove('active');
+    this.elements.toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  /**
+   * Send user message
+   */
+  async sendMessage() {
+    const message = this.elements.input.value.trim();
+
+    if (!message || this.isLoading) return;
+
+    // Add user message to UI
+    this.addMessage('user', message);
+    this.elements.input.value = '';
+    this.elements.input.style.height = 'auto';
+
+    // Show loading
+    this.setLoading(true);
+
+    try {
+      // Get AI response
+      const response = await this.getAIResponse(message);
+      this.addMessage('assistant', response);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      this.addMessage('assistant', 'Lo siento, ha ocurrido un error al procesar tu mensaje. Por favor, intenta de nuevo.');
+    } finally {
+      this.setLoading(false);
+    }
+
+    // Save chat history
+    this.saveChatHistory();
+  }
+
+  /**
+   * Get AI response from OpenRouter
+   */
+  async getAIResponse(userMessage) {
+    // Build messages array with system prompt
+    const messagesForAPI = [
+      {
+        role: 'system',
+        content: this.systemPrompt
+      },
+      ...this.messages.slice(-10).map(msg => ({ // Only send last 10 messages for context
+        role: msg.role,
+        content: msg.content
+      })),
+      {
+        role: 'user',
+        content: userMessage
+      }
+    ];
+
+    const response = await fetch(this.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Mercadona Recipe Assistant'
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: messagesForAPI,
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+
+  /**
+   * Add message to chat
+   */
+  addMessage(role, content) {
+    // Add to messages array
+    this.messages.push({ role, content, timestamp: Date.now() });
+
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = `chat-message chat-message--${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-message-avatar';
+    avatar.innerHTML = role === 'user'
+      ? '<i class="fas fa-user"></i>'
+      : '<i class="fas fa-robot"></i>';
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'chat-message-content';
+
+    // Convert markdown-like formatting to HTML
+    const formattedContent = this.formatMessage(content);
+    contentEl.innerHTML = formattedContent;
+
+    messageEl.appendChild(avatar);
+    messageEl.appendChild(contentEl);
+
+    this.elements.messages.appendChild(messageEl);
+
+    // Scroll to bottom
+    this.scrollToBottom();
+  }
+
+  /**
+   * Format message content (basic markdown support)
+   */
+  formatMessage(text) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+      .replace(/\n/g, '<br>') // Line breaks
+      .replace(/^- (.+)$/gm, '<li>$1</li>') // List items
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Wrap lists
+  }
+
+  /**
+   * Set loading state
+   */
+  setLoading(loading) {
+    this.isLoading = loading;
+
+    if (loading) {
+      // Add typing indicator
+      const typingEl = document.createElement('div');
+      typingEl.className = 'chat-message chat-message--assistant chat-typing';
+      typingEl.id = 'chat-typing-indicator';
+      typingEl.innerHTML = `
+        <div class="chat-message-avatar">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="chat-message-content">
+          <div class="typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      `;
+      this.elements.messages.appendChild(typingEl);
+      this.scrollToBottom();
+    } else {
+      // Remove typing indicator
+      const typingEl = document.getElementById('chat-typing-indicator');
+      if (typingEl) typingEl.remove();
+    }
+
+    // Disable/enable input
+    this.elements.input.disabled = loading;
+    this.elements.sendBtn.disabled = loading;
+  }
+
+  /**
+   * Scroll chat to bottom
+   */
+  scrollToBottom() {
+    setTimeout(() => {
+      this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+    }, 100);
+  }
+
+  /**
+   * Clear chat
+   */
+  clearChat() {
+    if (confirm('¿Estás seguro de que quieres borrar toda la conversación?')) {
+      this.messages = [];
+      this.elements.messages.innerHTML = '';
+      this.saveChatHistory();
+      this.addMessage('assistant', '¡Hola! Soy tu asistente de recetas con productos de Mercadona. ¿Qué te gustaría cocinar hoy? 👨‍🍳');
+    }
+  }
+
+  /**
+   * Update products data
+   */
+  updateProducts(products) {
+    this.productsData = products;
+    this.systemPrompt = this.buildSystemPrompt();
+  }
+
+  /**
+   * Save chat history to localStorage
+   */
+  saveChatHistory() {
+    try {
+      localStorage.setItem('mercadona_chat_history', JSON.stringify(this.messages));
+    } catch (e) {
+      console.error('Error saving chat history:', e);
+    }
+  }
+
+  /**
+   * Load chat history from localStorage
+   */
+  loadChatHistory() {
+    try {
+      const saved = localStorage.getItem('mercadona_chat_history');
+      if (saved) {
+        this.messages = JSON.parse(saved);
+        // Restore messages to UI
+        this.messages.forEach(msg => {
+          const messageEl = document.createElement('div');
+          messageEl.className = `chat-message chat-message--${msg.role}`;
+
+          const avatar = document.createElement('div');
+          avatar.className = 'chat-message-avatar';
+          avatar.innerHTML = msg.role === 'user'
+            ? '<i class="fas fa-user"></i>'
+            : '<i class="fas fa-robot"></i>';
+
+          const contentEl = document.createElement('div');
+          contentEl.className = 'chat-message-content';
+          contentEl.innerHTML = this.formatMessage(msg.content);
+
+          messageEl.appendChild(avatar);
+          messageEl.appendChild(contentEl);
+          this.elements.messages.appendChild(messageEl);
+        });
+        this.scrollToBottom();
+      }
+    } catch (e) {
+      console.error('Error loading chat history:', e);
+    }
+  }
+}

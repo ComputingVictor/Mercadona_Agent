@@ -120,6 +120,9 @@ class MercadonaApp {
       
       this.state.initialized = true;
       console.log('🚀 Mercadona App v0.2 initialized successfully');
+
+      // Initialize Recipe Assistant Chat
+      this.initializeRecipeChat();
     } catch (error) {
       console.error('❌ Failed to initialize app:', error);
       this.utils.showToast('Error al cargar la aplicación', 'error');
@@ -3323,6 +3326,133 @@ class MercadonaApp {
           toast.parentNode.removeChild(toast);
         }
       }, 300);
+    }
+  }
+
+  /**
+   * Initialize Recipe Assistant Chat
+   */
+  initializeRecipeChat() {
+    // Check if SecureConfig exists (preferred method)
+    const useSecureConfig = typeof SecureConfig !== 'undefined';
+
+    // Check if chat should be enabled
+    const chatEnabled = useSecureConfig
+      ? SecureConfig.isChatEnabled()
+      : (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.ENABLE_CHAT !== false);
+
+    if (!chatEnabled) {
+      console.log('ℹ️ Chat feature is disabled');
+      const chatToggle = document.getElementById('recipe-chat-toggle');
+      if (chatToggle) chatToggle.style.display = 'none';
+      return;
+    }
+
+    // Get API key from SecureConfig or APP_CONFIG
+    let apiKey = null;
+    if (useSecureConfig) {
+      apiKey = SecureConfig.getAPIKey();
+    } else if (typeof APP_CONFIG !== 'undefined') {
+      apiKey = APP_CONFIG.OPENROUTER_API_KEY;
+      if (apiKey === 'YOUR_OPENROUTER_API_KEY_HERE') {
+        apiKey = null;
+      }
+    }
+
+    // Setup chat toggle button
+    const chatToggle = document.getElementById('recipe-chat-toggle');
+    if (!chatToggle) {
+      console.error('❌ Chat toggle button not found');
+      return;
+    }
+
+    // If no API key, show setup modal when user clicks
+    if (!apiKey) {
+      console.warn('⚠️ OpenRouter API key not configured');
+
+      // Add settings icon badge to indicate configuration needed
+      chatToggle.innerHTML = '<i class="fas fa-comments"></i><span class="badge visible" style="background: var(--color-warning);">!</span>';
+      chatToggle.title = 'Configurar Asistente de Recetas';
+
+      chatToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        if (useSecureConfig) {
+          // Show secure setup modal
+          SecureConfig.showAPIKeySetup((key) => {
+            if (key) {
+              // Reload to initialize chat
+              this.initializeRecipeChat();
+              this.utils.showToast('✅ API key configurada. El chat está listo!', 'success');
+            }
+          });
+        } else {
+          this.utils.showToast('Por favor, configura tu API key de OpenRouter', 'warning');
+        }
+      }, { once: true });
+
+      return;
+    }
+
+    // Check if RecipeAssistantChat class exists
+    if (typeof RecipeAssistantChat === 'undefined') {
+      console.error('❌ RecipeAssistantChat class not loaded');
+      return;
+    }
+
+    try {
+      // Initialize chat with API key and products data
+      window.recipeChat = new RecipeAssistantChat(
+        apiKey,
+        this.state.products
+      );
+
+      console.log('✅ Recipe Assistant Chat initialized successfully');
+
+      // Update chat when products are loaded
+      if (this.state.products.length > 0) {
+        window.recipeChat.updateProducts(this.state.products);
+      }
+
+      // Add settings button to chat header
+      this.addChatSettingsButton();
+
+    } catch (error) {
+      console.error('❌ Failed to initialize Recipe Assistant Chat:', error);
+      this.utils.showToast('Error al inicializar el asistente de recetas', 'error');
+    }
+  }
+
+  /**
+   * Add settings button to chat for API key management
+   */
+  addChatSettingsButton() {
+    if (typeof SecureConfig === 'undefined') return;
+
+    const chatHeader = document.querySelector('.recipe-chat-header-actions');
+    if (!chatHeader) return;
+
+    // Check if button already exists
+    if (document.getElementById('recipe-chat-settings')) return;
+
+    const settingsBtn = document.createElement('button');
+    settingsBtn.id = 'recipe-chat-settings';
+    settingsBtn.className = 'recipe-chat-header-btn';
+    settingsBtn.setAttribute('aria-label', 'Configuración');
+    settingsBtn.setAttribute('title', 'Configuración del chat');
+    settingsBtn.innerHTML = '<i class="fas fa-cog"></i>';
+
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      SecureConfig.showAPIKeyManagement();
+    });
+
+    // Insert before clear button
+    const clearBtn = document.getElementById('recipe-chat-clear');
+    if (clearBtn) {
+      chatHeader.insertBefore(settingsBtn, clearBtn);
+    } else {
+      chatHeader.prepend(settingsBtn);
     }
   }
 }
