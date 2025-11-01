@@ -3350,9 +3350,19 @@ class MercadonaApp {
 
     if (!apiKey) {
       console.warn('⚠️ OpenRouter API key not configured');
-      this.utils.showToast('Chat no disponible: API key no configurada en GitHub Secrets', 'warning');
+
+      // Show button but with warning badge
       const chatToggle = document.getElementById('recipe-chat-toggle');
-      if (chatToggle) chatToggle.style.display = 'none';
+      if (chatToggle) {
+        chatToggle.innerHTML = '<i class="fas fa-dumbbell"></i><span class="badge visible" style="background: var(--color-warning);">!</span>';
+        chatToggle.title = 'Configurar API Key';
+
+        // Add click handler to show instructions
+        chatToggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.utils.showToast('Para desarrollo local: Configura tu API key en config.js', 'warning');
+        }, { once: true });
+      }
       return;
     }
 
