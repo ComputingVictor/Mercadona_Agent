@@ -8,9 +8,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     curl \
     xvfb \
-    libxi6 \
-    libgconf-2-4 \
-    default-jdk \
+    git \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
