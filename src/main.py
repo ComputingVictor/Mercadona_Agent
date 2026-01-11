@@ -152,8 +152,16 @@ def scrape_mercadona(start_page=0, end_page=300):
     df = pl.DataFrame(products_data)
     print(df)
 
-    # Guardar como CSV
-    df.write_csv("../data/raw/products.csv")
+    # Guardar como CSV (usar ruta absoluta o relativa al script)
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    output_path = os.path.join(base_dir, "data", "raw", "products.csv")
+
+    # Crear directorio si no existe
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    df.write_csv(output_path)
+    print(f"Data saved to: {output_path}")
 
     return products_data
 

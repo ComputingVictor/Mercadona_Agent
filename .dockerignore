@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
+scheduler.log
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+
+# Test files
+tests/
+test_*.py
+
+# CI/CD
+.github/
+
+# Node modules (if any)
+node_modules/
+
+# Environment files (should be set in Railway)
+.env
+.env.local
+
+# Large data files that shouldn't be in the image
+# (Railway will persist data directory)
+img/
