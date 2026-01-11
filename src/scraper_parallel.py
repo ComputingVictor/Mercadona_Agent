@@ -161,7 +161,9 @@ def scrape_single_page_csv(page_num, get_secondary_images=False):
         if not basic_products:
             return []
 
-        print(f"📦 Página {page_num}: {len(basic_products)} productos")
+        # Reduce logging frequency - only log every 10th page
+        if page_num % 10 == 0:
+            print(f"📦 Página {page_num}: {len(basic_products)} productos")
 
         for i, product in enumerate(basic_products):
             csv_row = {
@@ -338,7 +340,9 @@ def scrape_mercadona_parallel_csv(start_page=0, end_page=1000, num_workers=10, o
                 if page_products:
                     all_products.extend(page_products)
             except Exception as e:
-                print(f"❌ Error en página {page_num}: {e}")
+                # Only log errors occasionally to avoid rate limiting
+                if page_num % 50 == 0:
+                    print(f"❌ Error en página {page_num}: {e}")
 
     end_time = time.time()
     total_time = end_time - start_time
