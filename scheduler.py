@@ -32,10 +32,14 @@ def run_scraper():
 
         # Run the parallel scraper
         # Parameters: start_page, end_page, num_workers, output_dir
+        # Use fewer workers in production to reduce memory usage
+        num_workers = int(os.getenv('SCRAPER_WORKERS', '5'))
+        logger.info(f"Using {num_workers} parallel workers")
+
         csv_file, products = scrape_mercadona_parallel_csv(
             start_page=0,
             end_page=1000,
-            num_workers=10,
+            num_workers=num_workers,
             output_dir="data/processed"
         )
 
