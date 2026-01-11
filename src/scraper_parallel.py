@@ -26,7 +26,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # FUNCIONES CORE - SELENIUM Y PARSING
 
 def create_optimized_driver():
-    """Crear driver de Chrome optimizado para scraping paralelo."""
+    """Crear driver de Chrome optimizado para scraping paralelo con bajo uso de memoria."""
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -35,6 +35,28 @@ def create_optimized_driver():
     options.add_argument("--disable-extensions")
     options.add_argument("--log-level=3")
     options.add_argument("--disable-images")
+
+    # Opciones adicionales para reducir uso de memoria
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--disable-background-networking")
+    options.add_argument("--disable-background-timer-throttling")
+    options.add_argument("--disable-backgrounding-occluded-windows")
+    options.add_argument("--disable-breakpad")
+    options.add_argument("--disable-component-extensions-with-background-pages")
+    options.add_argument("--disable-features=TranslateUI,BlinkGenPropertyTrees")
+    options.add_argument("--disable-ipc-flooding-protection")
+    options.add_argument("--disable-renderer-backgrounding")
+    options.add_argument("--enable-features=NetworkService,NetworkServiceInProcess")
+    options.add_argument("--force-color-profile=srgb")
+    options.add_argument("--hide-scrollbars")
+    options.add_argument("--metrics-recording-only")
+    options.add_argument("--mute-audio")
+
+    # Limitar memoria y recursos
+    options.add_argument("--memory-pressure-off")
+    options.add_argument("--max-old-space-size=512")
+    options.add_argument("--js-flags=--max-old-space-size=512")
+
     options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
 
     # Para entornos de producción (Docker/Railway)
