@@ -30,17 +30,15 @@ def run_scraper():
         logger.info("Starting Mercadona parallel scraper...")
         from src.scraper_parallel import scrape_mercadona_parallel_csv
 
-        # Run the parallel scraper
-        # Parameters: start_page, end_page, num_workers, output_dir
-        # Use very few workers in Railway due to memory constraints
-        # Railway free tier has limited RAM - 3 workers is safer than 5
-        num_workers = int(os.getenv('SCRAPER_WORKERS', '3'))
-        logger.info(f"Using {num_workers} parallel workers")
+        # Run the scraper in SEQUENTIAL mode (1 worker) for Railway
+        # Railway free tier does NOT have enough RAM for parallel Chrome instances
+        # This will be slower but STABLE and won't crash
+        logger.info("Running in SEQUENTIAL mode (1 worker) for stability")
 
         csv_file, products = scrape_mercadona_parallel_csv(
             start_page=0,
             end_page=1000,
-            num_workers=num_workers,
+            num_workers=1,  # ALWAYS 1 in production
             output_dir="data/processed"
         )
 
