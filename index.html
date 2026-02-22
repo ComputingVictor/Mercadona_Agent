@@ -22,6 +22,10 @@
   <!-- Main stylesheet -->
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="chat.css">
+
+  <!-- Chart.js for price history -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   
   <!-- PWA Meta tags -->
   <meta name="theme-color" content="#22c55e">
@@ -184,6 +188,11 @@
           <i class="fas fa-clock" aria-hidden="true"></i>
           <span>Tema automático</span>
         </button>
+
+        <button class="mobile-menu-item" data-action="history">
+          <i class="fas fa-chart-line" aria-hidden="true"></i>
+          <span>Historial de precios</span>
+        </button>
       </div>
     </div>
   </nav>
@@ -216,6 +225,11 @@
             <i class="fas fa-percent" aria-hidden="true"></i>
             <span>Descuentos</span>
             <span class="category-count" id="discounts-count">0</span>
+          </button>
+
+          <button id="show-history-btn" class="category-btn category-btn--history">
+            <i class="fas fa-chart-line" aria-hidden="true"></i>
+            <span>Historial de precios</span>
           </button>
           
           <ul id="category-list" class="category-list" role="list"></ul>
@@ -336,6 +350,191 @@
           </div>
         </div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- HISTORIAL DE PRECIOS                             -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <section
+        id="price-history-view"
+        class="price-history-view hidden"
+        aria-label="Historial de precios"
+      >
+        <!-- Cabecera -->
+        <div class="ph-header">
+          <div class="ph-header-text">
+            <h2 class="ph-title">
+              <i class="fas fa-chart-line" aria-hidden="true"></i>
+              Historial de Precios
+            </h2>
+            <p class="ph-subtitle">
+              Evolución de precios registrada en cada actualización de la base de datos.
+              Ejecuta el scraper periódicamente para acumular datos históricos.
+            </p>
+          </div>
+        </div>
+
+        <!-- Buscador de productos -->
+        <div class="ph-search-container">
+          <div id="ph-search-wrapper" class="ph-search-wrapper">
+            <i class="fas fa-search ph-search-icon" aria-hidden="true"></i>
+            <input
+              type="search"
+              id="ph-search"
+              class="ph-search-input"
+              placeholder="Buscar producto para ver su historial de precios..."
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="Buscar producto en el historial"
+            >
+            <div id="ph-suggestions" class="ph-suggestions hidden" role="listbox"></div>
+          </div>
+        </div>
+
+        <!-- Mensaje sin datos -->
+        <div id="ph-no-data" class="ph-no-data hidden">
+          <i class="fas fa-database ph-no-data-icon" aria-hidden="true"></i>
+          <h3>Sin datos históricos todavía</h3>
+          <p>
+            El historial se genera automáticamente cada vez que ejecutas el scraper
+            en el notebook <strong>mercadona_scraper_parallel_csv.ipynb</strong>.
+            Cada ejecución añade una fila con la fecha y el precio actual de cada producto.
+          </p>
+        </div>
+
+        <!-- Estado inicial (cargando / sin selección aún) -->
+        <div id="ph-empty-state" class="ph-empty-state">
+          <i class="fas fa-chart-line ph-empty-icon" aria-hidden="true"></i>
+          <h3>Cargando datos…</h3>
+          <p>Preparando el historial de precios.</p>
+        </div>
+
+        <!-- Dashboard general (visible tras cargar datos, sin producto seleccionado) -->
+        <div id="ph-dashboard" class="ph-dashboard hidden">
+
+          <!-- Cabecera -->
+          <div class="ph-dash-header">
+            <h3 class="ph-dash-title">Historial de precios</h3>
+            <span id="ph-ov-range" class="ph-dash-range"></span>
+          </div>
+
+          <!-- Banner principal: variación media del carrito -->
+          <div id="ph-carrito-banner" class="ph-carrito-banner">
+            <div class="ph-carrito-icon">
+              <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+            </div>
+            <div class="ph-carrito-body">
+              <span class="ph-carrito-label">Variación media del carrito de la compra</span>
+              <span id="ph-ov-avg" class="ph-carrito-value">—</span>
+              <span id="ph-carrito-detail" class="ph-carrito-detail"></span>
+            </div>
+          </div>
+
+          <!-- Tarjetas: subidos / bajados / sin cambio -->
+          <div class="ph-overview-grid">
+            <div class="ph-overview-card ph-overview-card--up">
+              <span class="ph-overview-label">Productos subidos</span>
+              <span id="ph-ov-up" class="ph-overview-value">—</span>
+            </div>
+            <div class="ph-overview-card ph-overview-card--down">
+              <span class="ph-overview-label">Productos bajados</span>
+              <span id="ph-ov-down" class="ph-overview-value">—</span>
+            </div>
+            <div class="ph-overview-card">
+              <span class="ph-overview-label">Sin cambio</span>
+              <span id="ph-ov-stable" class="ph-overview-value">—</span>
+            </div>
+          </div>
+
+          <!-- Top subidas y bajadas -->
+          <div class="ph-top-grid">
+            <div class="ph-top-panel ph-top-panel--up">
+              <h4 class="ph-top-title">
+                <i class="fas fa-arrow-trend-up" aria-hidden="true"></i>
+                Mayores subidas
+              </h4>
+              <ul id="ph-top-up" class="ph-top-list"></ul>
+            </div>
+            <div class="ph-top-panel ph-top-panel--down">
+              <h4 class="ph-top-title">
+                <i class="fas fa-arrow-trend-down" aria-hidden="true"></i>
+                Mayores bajadas
+              </h4>
+              <ul id="ph-top-down" class="ph-top-list"></ul>
+            </div>
+          </div>
+
+        </div><!-- /ph-dashboard -->
+
+        <!-- Panel con gráfico y tabla (visible tras seleccionar producto) -->
+        <div id="ph-panel" class="ph-panel hidden">
+
+          <!-- Cabecera del producto -->
+          <div class="ph-panel-header">
+            <img
+              id="ph-product-img"
+              class="ph-product-img"
+              src=""
+              alt=""
+              loading="lazy"
+              onerror="this.style.display='none'"
+            >
+            <div class="ph-panel-title-group">
+              <h3 id="ph-product-name" class="ph-product-name"></h3>
+              <p  id="ph-product-meta" class="ph-product-meta"></p>
+            </div>
+            <button
+              id="ph-close-panel"
+              class="ph-close-btn"
+              aria-label="Cerrar panel de producto"
+              title="Cerrar"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <!-- Tarjetas de estadísticas -->
+          <div class="ph-stats-grid">
+            <div class="ph-stat-card">
+              <span class="ph-stat-label">Precio actual</span>
+              <span id="ph-stat-current" class="ph-stat-value"></span>
+            </div>
+            <div class="ph-stat-card">
+              <span class="ph-stat-label">Primer registro</span>
+              <span id="ph-stat-first" class="ph-stat-value"></span>
+            </div>
+            <div class="ph-stat-card ph-stat-card--trend">
+              <span class="ph-stat-label">Variación total</span>
+              <span id="ph-stat-change" class="ph-stat-value"></span>
+            </div>
+          </div>
+
+          <!-- Gráfico -->
+          <div class="ph-chart-wrapper">
+            <canvas id="ph-chart"></canvas>
+          </div>
+
+          <!-- Tabla de precios -->
+          <div class="ph-table-wrapper">
+            <h4 class="ph-table-title">Registro completo</h4>
+            <div class="ph-table-scroll">
+              <table class="ph-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Precio</th>
+                    <th>Precio oferta</th>
+                    <th>Variación</th>
+                  </tr>
+                </thead>
+                <tbody id="ph-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /ph-panel -->
+      </section>
+      <!-- ═══════════════════════════════════════════════════ -->
 
       <!-- Products Grid -->
       <div class="products-container">
@@ -522,5 +721,6 @@
   <script src="config-secure.js" defer></script>
   <script src="chat.js" defer></script>
   <script src="script.js" defer></script>
+  <script src="price-history.js" defer></script>
 </body>
 </html>
