@@ -61,7 +61,8 @@ def root():
             "price_history": "/api/products/{id}/history",
             "search": "/api/search",
             "stats": "/api/stats",
-            "update": "/api/update"
+            "update": "/api/update",
+            "update_new_arrivals": "/api/update/new-arrivals"
         }
     }
 
@@ -360,6 +361,33 @@ def get_update_status():
             "price_changes": last_update.price_changes,
             "error_message": last_update.error_message
         }
+
+
+@app.post("/api/update/new-arrivals")
+def update_new_arrivals():
+    """
+    Actualiza el campo is_new de los productos basándose en el endpoint
+    oficial de novedades de Mercadona.
+
+    Este endpoint es rápido (no requiere actualizar todos los productos)
+    y puede ejecutarse frecuentemente.
+    """
+    try:
+        from .api_client import MercadoaAPIClient
+
+        client = MercadoaAPIClient()
+        new_arrival_ids = client.get_new_arrivals()
+
+        db.update_new_arrivals(new_arrival_ids)
+
+        return {
+            "status": "success",
+            "message": f"Marcados {len(new_arrival_ids)} productos como novedades",
+            "new_arrivals_count": len(new_arrival_ids)
+        }
+    except Exception as e:
+        logger.error(f"Error actualizando novedades: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -61,6 +61,23 @@ class MercadoaAPIClient:
         """Obtiene detalles de una categoría específica."""
         return self._request(f"/categories/{category_id}/")
 
+    def get_new_arrivals(self) -> List[str]:
+        """
+        Obtiene los IDs de productos que son novedades oficiales según Mercadona.
+
+        Returns:
+            Lista de IDs de productos (como strings)
+        """
+        try:
+            data = self._request("/home/new-arrivals/")
+            items = data.get('items', [])
+            product_ids = [str(item['id']) for item in items if 'id' in item]
+            logger.info(f"Encontradas {len(product_ids)} novedades oficiales")
+            return product_ids
+        except Exception as e:
+            logger.error(f"Error obteniendo novedades: {e}")
+            return []
+
     def find_valid_categories(
         self,
         start_id: int = 1,

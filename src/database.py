@@ -261,6 +261,28 @@ class Database:
             cached = session.query(CategoryCache).filter_by(is_valid=True).all()
             return [c.category_id for c in cached]
 
+    def update_new_arrivals(self, new_product_ids: List[str]):
+        """
+        Actualiza el campo is_new basándose en la lista oficial de novedades.
+
+        Args:
+            new_product_ids: Lista de IDs de productos que son novedades
+        """
+        with self.get_session() as session:
+            # Primero, marcar TODOS los productos como no-novedades
+            session.query(Product).update({"is_new": False})
+
+            # Luego, marcar solo los de la lista como novedades
+            if new_product_ids:
+                session.query(Product).filter(
+                    Product.id.in_(new_product_ids)
+                ).update(
+                    {"is_new": True},
+                    synchronize_session=False
+                )
+
+            logger.info(f"Marcados {len(new_product_ids)} productos como novedades")
+
     def log_update(
         self,
         started_at: datetime,

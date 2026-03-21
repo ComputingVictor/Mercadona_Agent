@@ -89,7 +89,12 @@ class ProductUpdater:
             stats['new'] = db_stats['new']
             stats['updated'] = db_stats['updated']
 
-            # 4. Finalizar
+            # 4. Actualizar novedades oficiales
+            logger.info("\nActualizando novedades oficiales...")
+            new_arrival_ids = self.client.get_new_arrivals()
+            self.db.update_new_arrivals(new_arrival_ids)
+
+            # 5. Finalizar
             completed_at = datetime.utcnow()
             duration = (completed_at - started_at).total_seconds()
 
