@@ -78,6 +78,23 @@ class MercadoaAPIClient:
             logger.error(f"Error obteniendo novedades: {e}")
             return []
 
+    def get_price_drops(self) -> List[str]:
+        """
+        Obtiene los IDs de productos con bajada de precio oficial según Mercadona.
+
+        Returns:
+            Lista de IDs de productos (como strings)
+        """
+        try:
+            data = self._request("/home/price-drops/")
+            items = data.get('items', [])
+            product_ids = [str(item['id']) for item in items if 'id' in item]
+            logger.info(f"Encontrados {len(product_ids)} productos con bajada de precio")
+            return product_ids
+        except Exception as e:
+            logger.error(f"Error obteniendo bajadas de precio: {e}")
+            return []
+
     def find_valid_categories(
         self,
         start_id: int = 1,

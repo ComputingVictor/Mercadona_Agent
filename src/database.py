@@ -283,6 +283,28 @@ class Database:
 
             logger.info(f"Marcados {len(new_product_ids)} productos como novedades")
 
+    def update_price_drops(self, price_drop_ids: List[str]):
+        """
+        Actualiza el campo price_decreased basándose en la lista oficial de bajadas.
+
+        Args:
+            price_drop_ids: Lista de IDs de productos con bajada de precio
+        """
+        with self.get_session() as session:
+            # Primero, marcar TODOS los productos como sin bajada de precio
+            session.query(Product).update({"price_decreased": False})
+
+            # Luego, marcar solo los de la lista como rebajados
+            if price_drop_ids:
+                session.query(Product).filter(
+                    Product.id.in_(price_drop_ids)
+                ).update(
+                    {"price_decreased": True},
+                    synchronize_session=False
+                )
+
+            logger.info(f"Marcados {len(price_drop_ids)} productos con bajada de precio")
+
     def log_update(
         self,
         started_at: datetime,

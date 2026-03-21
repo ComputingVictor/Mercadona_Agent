@@ -61,7 +61,7 @@ def root():
     """Endpoint raíz."""
     return {
         "name": "Mercadona Products API",
-        "version": "2.1.0",
+        "version": "2.2.0",
         "endpoints": {
             "products": "/api/products",
             "product_detail": "/api/products/{id}",
@@ -71,6 +71,7 @@ def root():
             "stats": "/api/stats",
             "update": "/api/update",
             "update_new_arrivals": "/api/update/new-arrivals",
+            "update_price_drops": "/api/update/price-drops",
             "rankings_increases": "/api/rankings/price-increases",
             "rankings_decreases": "/api/rankings/price-decreases"
         }
@@ -397,6 +398,33 @@ def update_new_arrivals():
         }
     except Exception as e:
         logger.error(f"Error actualizando novedades: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.post("/api/update/price-drops")
+def update_price_drops():
+    """
+    Actualiza el campo price_decreased de los productos basándose en el endpoint
+    oficial de bajadas de precio de Mercadona.
+
+    Este endpoint es rápido (no requiere actualizar todos los productos)
+    y puede ejecutarse frecuentemente.
+    """
+    try:
+        from .api_client import MercadoaAPIClient
+
+        client = MercadoaAPIClient()
+        price_drop_ids = client.get_price_drops()
+
+        db.update_price_drops(price_drop_ids)
+
+        return {
+            "status": "success",
+            "message": f"Marcados {len(price_drop_ids)} productos con bajada de precio",
+            "price_drops_count": len(price_drop_ids)
+        }
+    except Exception as e:
+        logger.error(f"Error actualizando bajadas de precio: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 

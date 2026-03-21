@@ -94,7 +94,12 @@ class ProductUpdater:
             new_arrival_ids = self.client.get_new_arrivals()
             self.db.update_new_arrivals(new_arrival_ids)
 
-            # 5. Finalizar
+            # 5. Actualizar productos rebajados
+            logger.info("\nActualizando productos rebajados...")
+            price_drop_ids = self.client.get_price_drops()
+            self.db.update_price_drops(price_drop_ids)
+
+            # 6. Finalizar
             completed_at = datetime.utcnow()
             duration = (completed_at - started_at).total_seconds()
 
