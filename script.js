@@ -3463,6 +3463,11 @@ if (!document.querySelector('#mercadona-animations')) {
   document.head.appendChild(style);
 }
 
+// Apply API integration patch if available
+if (typeof window.applyMercadonaAPIPatch === 'function') {
+  window.applyMercadonaAPIPatch();
+}
+
 // Initialize app when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {

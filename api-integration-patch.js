@@ -4,27 +4,37 @@
  *
  * Este archivo parchea el método loadData() de MercadonaApp
  * para usar el adaptador API en lugar de cargar directamente el CSV.
+ *
+ * IMPORTANTE: Este script se carga con 'defer' ANTES de script.js
+ * para garantizar que el patch se aplique antes de que MercadonaApp se inicialice
  */
 
-// Esperar a que MercadonaApp esté cargado
-document.addEventListener('DOMContentLoaded', function() {
-  // Pequeño delay para asegurar que todo esté inicializado
-  setTimeout(function() {
-    if (typeof MercadonaApp === 'undefined' || typeof MercadonaAPIAdapter === 'undefined') {
-      console.warn('MercadonaApp o MercadonaAPIAdapter no encontrados');
-      return;
+(function() {
+  'use strict';
+
+  // Verificar que todo esté disponible
+  if (typeof MercadonaAPIAdapter === 'undefined') {
+    console.error('❌ MercadonaAPIAdapter no está definido. Asegúrate de que api-adapter.js se carga primero.');
+    return;
+  }
+
+  // Inicializar el adaptador API
+  const apiAdapter = new MercadonaAPIAdapter({
+    apiBaseURL: window.AppConfig?.api?.baseURL || 'http://localhost:8000/api',
+    useAPI: window.AppConfig?.api?.enabled !== false,
+    fallbackToCSV: window.AppConfig?.api?.fallbackToCSV !== false,
+    cacheTimeout: window.AppConfig?.api?.cacheTimeout || 5 * 60 * 1000
+  });
+
+  // Guardar referencia global para debugging
+  window.apiAdapter = apiAdapter;
+
+  // Guardar función para parchear cuando MercadonaApp esté definido
+  window.applyMercadonaAPIPatch = function() {
+    if (typeof MercadonaApp === 'undefined') {
+      console.warn('⚠️ MercadonaApp aún no está definido');
+      return false;
     }
-
-    // Inicializar el adaptador API
-    const apiAdapter = new MercadonaAPIAdapter({
-      apiBaseURL: window.AppConfig?.api?.baseURL || 'http://localhost:8000/api',
-      useAPI: window.AppConfig?.api?.enabled !== false,
-      fallbackToCSV: window.AppConfig?.api?.fallbackToCSV !== false,
-      cacheTimeout: window.AppConfig?.api?.cacheTimeout || 5 * 60 * 1000
-    });
-
-    // Guardar referencia global para debugging
-    window.apiAdapter = apiAdapter;
 
     // Parchear el prototipo de MercadonaApp
     const originalLoadData = MercadonaApp.prototype.loadData;
@@ -110,6 +120,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     console.log('✅ Parche de integración API aplicado correctamente');
+    return true;
+  };
 
-  }, 100);
-});
+  // Intentar aplicar inmediatamente (por si MercadonaApp ya existe)
+  if (typeof MercadonaApp !== 'undefined') {
+    window.applyMercadonaAPIPatch();
+  }
+
+})();
