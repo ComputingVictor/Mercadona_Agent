@@ -47,13 +47,21 @@ async def startup_event():
     """Ejecutar al iniciar la aplicación."""
     logger.info("API iniciada")
 
+    # Iniciar scheduler en background para actualizaciones automáticas
+    try:
+        from .scheduler import start_scheduler_background
+        start_scheduler_background(db)
+        logger.info("Scheduler de actualizaciones automáticas iniciado")
+    except Exception as e:
+        logger.error(f"Error iniciando scheduler: {e}")
+
 
 @app.get("/")
 def root():
     """Endpoint raíz."""
     return {
         "name": "Mercadona Products API",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "endpoints": {
             "products": "/api/products",
             "product_detail": "/api/products/{id}",
@@ -62,7 +70,9 @@ def root():
             "search": "/api/search",
             "stats": "/api/stats",
             "update": "/api/update",
-            "update_new_arrivals": "/api/update/new-arrivals"
+            "update_new_arrivals": "/api/update/new-arrivals",
+            "rankings_increases": "/api/rankings/price-increases",
+            "rankings_decreases": "/api/rankings/price-decreases"
         }
     }
 
@@ -388,6 +398,134 @@ def update_new_arrivals():
     except Exception as e:
         logger.error(f"Error actualizando novedades: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@app.get("/api/rankings/price-increases")
+def get_price_increases(
+    days: int = Query(30, ge=1, le=365),
+    limit: int = Query(20, ge=1, le=100)
+):
+    """
+    Obtiene ranking de productos que más han subido de precio.
+
+    Args:
+        days: Período a analizar en días
+        limit: Número de resultados
+    """
+    with db.get_session() as session:
+        since = datetime.utcnow() - timedelta(days=days)
+
+        # Subconsulta para obtener el precio más antiguo y más reciente de cada producto
+        subquery = session.query(
+            PriceHistory.product_id,
+            func.min(PriceHistory.unit_price).label('min_price'),
+            func.max(PriceHistory.unit_price).label('max_price'),
+            func.count(PriceHistory.id).label('changes_count')
+        ).filter(
+            PriceHistory.recorded_at >= since
+        ).group_by(
+            PriceHistory.product_id
+        ).subquery()
+
+        # Join con productos y calcular diferencia
+        results = session.query(
+            Product,
+            subquery.c.min_price,
+            subquery.c.max_price,
+            subquery.c.changes_count,
+            (subquery.c.max_price - subquery.c.min_price).label('price_diff'),
+            (((subquery.c.max_price - subquery.c.min_price) / subquery.c.min_price) * 100).label('price_diff_percent')
+        ).join(
+            subquery,
+            Product.id == subquery.c.product_id
+        ).filter(
+            subquery.c.max_price > subquery.c.min_price  # Solo aumentos
+        ).order_by(
+            desc('price_diff_percent')
+        ).limit(limit).all()
+
+        return {
+            "period_days": days,
+            "ranking": [
+                {
+                    "product_id": r.Product.id,
+                    "display_name": r.Product.display_name,
+                    "thumbnail": r.Product.thumbnail,
+                    "category_name": r.Product.category_name,
+                    "current_price": r.Product.unit_price,
+                    "min_price": float(r.min_price),
+                    "max_price": float(r.max_price),
+                    "price_increase": float(r.price_diff),
+                    "price_increase_percent": float(r.price_diff_percent),
+                    "changes_count": r.changes_count
+                }
+                for r in results
+            ]
+        }
+
+
+@app.get("/api/rankings/price-decreases")
+def get_price_decreases(
+    days: int = Query(30, ge=1, le=365),
+    limit: int = Query(20, ge=1, le=100)
+):
+    """
+    Obtiene ranking de productos que más han bajado de precio.
+
+    Args:
+        days: Período a analizar en días
+        limit: Número de resultados
+    """
+    with db.get_session() as session:
+        since = datetime.utcnow() - timedelta(days=days)
+
+        # Subconsulta para obtener el precio más antiguo y más reciente de cada producto
+        subquery = session.query(
+            PriceHistory.product_id,
+            func.min(PriceHistory.unit_price).label('min_price'),
+            func.max(PriceHistory.unit_price).label('max_price'),
+            func.count(PriceHistory.id).label('changes_count')
+        ).filter(
+            PriceHistory.recorded_at >= since
+        ).group_by(
+            PriceHistory.product_id
+        ).subquery()
+
+        # Join con productos y calcular diferencia
+        results = session.query(
+            Product,
+            subquery.c.min_price,
+            subquery.c.max_price,
+            subquery.c.changes_count,
+            (subquery.c.min_price - subquery.c.max_price).label('price_diff'),
+            (((subquery.c.min_price - subquery.c.max_price) / subquery.c.max_price) * 100).label('price_diff_percent')
+        ).join(
+            subquery,
+            Product.id == subquery.c.product_id
+        ).filter(
+            subquery.c.max_price < subquery.c.min_price  # Solo descensos
+        ).order_by(
+            desc('price_diff_percent')
+        ).limit(limit).all()
+
+        return {
+            "period_days": days,
+            "ranking": [
+                {
+                    "product_id": r.Product.id,
+                    "display_name": r.Product.display_name,
+                    "thumbnail": r.Product.thumbnail,
+                    "category_name": r.Product.category_name,
+                    "current_price": r.Product.unit_price,
+                    "min_price": float(r.min_price),
+                    "max_price": float(r.max_price),
+                    "price_decrease": float(r.price_diff),
+                    "price_decrease_percent": float(r.price_diff_percent),
+                    "changes_count": r.changes_count
+                }
+                for r in results
+            ]
+        }
 
 
 if __name__ == "__main__":

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico de Precios - ¿Qué hay en el súper?</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .price-tracker-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .page-header p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      color: var(--primary-color);
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .period-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .period-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--border-color);
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+
+    .period-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .period-btn.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .ranking-list {
+      display: grid;
+      gap: 15px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+
+    .ranking-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .ranking-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .ranking-item:nth-child(1) .ranking-number {
+      color: #FFD700;
+    }
+
+    .ranking-item:nth-child(2) .ranking-number {
+      color: #C0C0C0;
+    }
+
+    .ranking-item:nth-child(3) .ranking-number {
+      color: #CD7F32;
+    }
+
+    .ranking-image {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .ranking-info {
+      flex: 1;
+    }
+
+    .ranking-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .ranking-category {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .ranking-price-info {
+      text-align: right;
+    }
+
+    .price-change {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .price-change.increase {
+      color: #ef4444;
+    }
+
+    .price-change.decrease {
+      color: #22c55e;
+    }
+
+    .price-details {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .ranking-item {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .ranking-price-info {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="price-tracker-container">
+    <a href="index.html" class="back-link">
+      <i class="fas fa-arrow-left"></i>
+      Volver al inicio
+    </a>
+
+    <div class="page-header">
+      <h1>📊 Histórico de Precios</h1>
+      <p>Descubre qué productos han subido o bajado de precio</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="increases">
+        <i class="fas fa-arrow-trend-up"></i> Mayores Subidas
+      </button>
+      <button class="tab" data-tab="decreases">
+        <i class="fas fa-arrow-trend-down"></i> Mayores Bajadas
+      </button>
+    </div>
+
+    <div class="period-selector">
+      <button class="period-btn active" data-days="7">Última semana</button>
+      <button class="period-btn" data-days="30">Último mes</button>
+      <button class="period-btn" data-days="90">Últimos 3 meses</button>
+    </div>
+
+    <!-- Tab: Mayores Subidas -->
+    <div class="tab-content active" id="tab-increases">
+      <div id="increases-loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando rankings...</p>
+      </div>
+      <div id="increases-list" class="ranking-list" style="display: none;"></div>
+      <div id="increases-empty" class="empty-state" style="display: none;">
+        <i class="fas fa-chart-line"></i>
+        <h3>No hay datos disponibles</h3>
+        <p>No se encontraron cambios de precio en este período</p>
+      </div>
+    </div>
+
+    <!-- Tab: Mayores Bajadas -->
+    <div class="tab-content" id="tab-decreases">
+      <div id="decreases-loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando rankings...</p>
+      </div>
+      <div id="decreases-list" class="ranking-list" style="display: none;"></div>
+      <div id="decreases-empty" class="empty-state" style="display: none;">
+        <i class="fas fa-chart-line"></i>
+        <h3>No hay datos disponibles</h3>
+        <p>No se encontraron cambios de precio en este período</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // Estado de la aplicación
+    const state = {
+      currentTab: 'increases',
+      currentDays: 7,
+      increases: null,
+      decreases: null
+    };
+
+    // API base URL
+    const API_URL = window.AppConfig?.api?.baseURL || 'http://localhost:8000/api';
+
+    // Cargar rankings
+    async function loadRankings(type, days) {
+      const endpoint = type === 'increases'
+        ? `/rankings/price-increases?days=${days}&limit=20`
+        : `/rankings/price-decreases?days=${days}&limit=20`;
+
+      try {
+        const response = await fetch(`${API_URL}${endpoint}`);
+        if (!response.ok) throw new Error('Error cargando datos');
+
+        const data = await response.json();
+        return data.ranking || [];
+      } catch (error) {
+        console.error('Error:', error);
+        return [];
+      }
+    }
+
+    // Renderizar ranking
+    function renderRanking(items, type) {
+      const listId = `${type}-list`;
+      const loadingId = `${type}-loading`;
+      const emptyId = `${type}-empty`;
+
+      const list = document.getElementById(listId);
+      const loading = document.getElementById(loadingId);
+      const empty = document.getElementById(emptyId);
+
+      loading.style.display = 'none';
+
+      if (!items || items.length === 0) {
+        empty.style.display = 'block';
+        list.style.display = 'none';
+        return;
+      }
+
+      empty.style.display = 'none';
+      list.style.display = 'grid';
+
+      const isIncrease = type === 'increases';
+      const priceKey = isIncrease ? 'price_increase' : 'price_decrease';
+      const percentKey = isIncrease ? 'price_increase_percent' : 'price_decrease_percent';
+
+      list.innerHTML = items.map((item, index) => `
+        <div class="ranking-item">
+          <div class="ranking-number">#${index + 1}</div>
+          <img src="${item.thumbnail}" alt="${item.display_name}" class="ranking-image" loading="lazy">
+          <div class="ranking-info">
+            <div class="ranking-title">${item.display_name}</div>
+            <div class="ranking-category">${item.category_name}</div>
+          </div>
+          <div class="ranking-price-info">
+            <div class="price-change ${isIncrease ? 'increase' : 'decrease'}">
+              ${isIncrease ? '+' : '-'}${item[percentKey].toFixed(1)}%
+            </div>
+            <div class="price-details">
+              ${item.min_price.toFixed(2)}€ → ${item.max_price.toFixed(2)}€
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Cambiar de tab
+    function switchTab(tabName) {
+      state.currentTab = tabName;
+
+      // Actualizar tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+      });
+
+      // Actualizar contenido
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+      });
+
+      // Cargar datos si no están cargados
+      if (!state[tabName]) {
+        loadAndRenderRankings(tabName, state.currentDays);
+      }
+    }
+
+    // Cambiar período
+    function changePeriod(days) {
+      state.currentDays = days;
+
+      // Actualizar botones
+      document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.days) === days);
+      });
+
+      // Recargar datos
+      loadAndRenderRankings('increases', days);
+      loadAndRenderRankings('decreases', days);
+    }
+
+    // Cargar y renderizar
+    async function loadAndRenderRankings(type, days) {
+      const data = await loadRankings(type, days);
+      state[type] = data;
+      renderRanking(data, type);
+    }
+
+    // Event listeners
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
+
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => changePeriod(parseInt(btn.dataset.days)));
+    });
+
+    // Cargar datos iniciales
+    loadAndRenderRankings('increases', state.currentDays);
+    loadAndRenderRankings('decreases', state.currentDays);
+  </script>
+</body>
+</html>
