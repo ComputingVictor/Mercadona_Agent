@@ -118,43 +118,59 @@ class MercadonaAPIAdapter {
   }
 
   /**
-   * Transforma producto de API al formato esperado por la app
+   * Transforma producto de API al formato CSV esperado por processProductData()
+   *
+   * IMPORTANTE: processProductData() espera el formato del CSV original:
+   * - name: string
+   * - Category: string (con C mayúscula)
+   * - price: string (no número)
+   * - image_url: string
+   * - novedad: boolean/string
+   * - discount_price: string (opcional)
    */
   transformProduct(apiProduct) {
     return {
+      // ID debe ser el ID de Mercadona (string)
       id: apiProduct.id,
-      slug: apiProduct.slug,
-      display_name: apiProduct.display_name || apiProduct.name,
-      name: apiProduct.display_name || apiProduct.name,
-      packaging: apiProduct.packaging,
-      thumbnail: apiProduct.thumbnail,
-      image: apiProduct.thumbnail,
-      share_url: apiProduct.share_url,
 
-      // Precios
-      unit_price: apiProduct.unit_price,
-      price: apiProduct.unit_price,
+      // Nombre
+      name: apiProduct.display_name || '',
+      subtitle: apiProduct.packaging || '',
+
+      // Categoría (con C mayúscula como espera el CSV)
+      Category: apiProduct.category_name || 'Sin categoría',
+
+      // Precio como STRING (como en CSV)
+      price: apiProduct.unit_price ? apiProduct.unit_price.toString() : '0',
+
+      // Descuento (si el precio anterior existe y es diferente)
+      discount_price: apiProduct.previous_unit_price && apiProduct.previous_unit_price !== apiProduct.unit_price
+        ? apiProduct.previous_unit_price.toString()
+        : '',
+
+      // Imágenes
+      image_url: apiProduct.thumbnail || '',
+      main_image_url: apiProduct.thumbnail || '',
+      secondary_image_url: '',
+
+      // Flags
+      novedad: apiProduct.is_new || false,
+
+      // Info adicional
+      nutritional_info: '',
+
+      // Datos extra de la API (para referencia)
+      slug: apiProduct.slug,
+      share_url: apiProduct.share_url,
+      packaging: apiProduct.packaging,
       bulk_price: apiProduct.bulk_price,
       reference_price: apiProduct.reference_price,
-      previous_price: apiProduct.previous_unit_price,
-      price_decreased: apiProduct.price_decreased,
-
-      // Tamaño
       unit_size: apiProduct.unit_size,
       size_format: apiProduct.size_format,
       reference_format: apiProduct.reference_format,
-
-      // Categoría
-      category_id: apiProduct.category_id,
-      category_name: apiProduct.category_name,
-      category: apiProduct.category_name,
       parent_category: apiProduct.parent_category,
-
-      // Flags
-      is_new: apiProduct.is_new,
       is_pack: apiProduct.is_pack,
-
-      // Metadata
+      price_decreased: apiProduct.price_decreased,
       updated_at: apiProduct.updated_at
     };
   }
