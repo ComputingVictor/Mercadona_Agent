@@ -314,15 +314,27 @@ def get_stats():
 
 
 @app.post("/api/update")
-async def trigger_update(background_tasks: BackgroundTasks):
+async def trigger_update(
+    background_tasks: BackgroundTasks,
+    force_rescan: bool = False
+):
     """
     Dispara una actualización de productos en background.
+
+    Args:
+        force_rescan: Si es True, reescanea todas las categorías (1-1500)
+                     Si es False, usa cache de categorías (más rápido)
     """
-    background_tasks.add_task(updater.run_update)
+    # Si force_rescan, no usar cache
+    use_cache = not force_rescan
+
+    background_tasks.add_task(updater.run_update, use_cache=use_cache)
 
     return {
         "message": "Actualización iniciada en background",
-        "status": "running"
+        "status": "running",
+        "force_rescan": force_rescan,
+        "note": "Consulta /api/update/status para ver el progreso"
     }
 
 
