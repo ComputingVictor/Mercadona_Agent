@@ -49,7 +49,6 @@ Thumbs.db
 
 # Local configuration
 config.local.js
-config.js
 database.local.js
 
 # Temporary files
