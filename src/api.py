@@ -61,7 +61,7 @@ def root():
     """Endpoint raíz."""
     return {
         "name": "Mercadona Products API",
-        "version": "2.2.0",
+        "version": "2.3.0",
         "endpoints": {
             "products": "/api/products",
             "product_detail": "/api/products/{id}",
@@ -73,7 +73,8 @@ def root():
             "update_new_arrivals": "/api/update/new-arrivals",
             "update_price_drops": "/api/update/price-drops",
             "rankings_increases": "/api/rankings/price-increases",
-            "rankings_decreases": "/api/rankings/price-decreases"
+            "rankings_decreases": "/api/rankings/price-decreases",
+            "migrate_add_product_fields": "/api/migrate/add-product-fields"
         }
     }
 
@@ -560,6 +561,55 @@ def get_price_decreases(
                 for r in results
             ]
         }
+
+
+@app.post("/api/migrate/add-product-fields")
+def migrate_add_product_fields():
+    """
+    Migración de base de datos: añade columnas total_units y unit_name.
+    Este endpoint se puede llamar de forma segura múltiples veces.
+    """
+    try:
+        from sqlalchemy import text, inspect
+
+        with db.engine.connect() as conn:
+            inspector = inspect(db.engine)
+            columns = {col['name'] for col in inspector.get_columns('products')}
+
+            migrations_applied = []
+
+            # Añadir total_units si no existe
+            if "total_units" not in columns:
+                logger.info("Añadiendo columna total_units...")
+                conn.execute(text("ALTER TABLE products ADD COLUMN total_units INTEGER"))
+                conn.commit()
+                migrations_applied.append("total_units")
+                logger.info("✓ Columna total_units añadida")
+
+            # Añadir unit_name si no existe
+            if "unit_name" not in columns:
+                logger.info("Añadiendo columna unit_name...")
+                conn.execute(text("ALTER TABLE products ADD COLUMN unit_name VARCHAR(50)"))
+                conn.commit()
+                migrations_applied.append("unit_name")
+                logger.info("✓ Columna unit_name añadida")
+
+        if migrations_applied:
+            return {
+                "status": "success",
+                "message": f"Migración completada. Columnas añadidas: {', '.join(migrations_applied)}",
+                "columns_added": migrations_applied
+            }
+        else:
+            return {
+                "status": "success",
+                "message": "No se necesitaron migraciones. Todas las columnas ya existen.",
+                "columns_added": []
+            }
+
+    except Exception as e:
+        logger.error(f"Error en migración: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error en migración: {str(e)}")
 
 
 if __name__ == "__main__":
