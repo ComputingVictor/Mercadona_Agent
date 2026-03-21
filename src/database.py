@@ -121,6 +121,8 @@ class Database:
 
             # Pack
             'pack_size': price_instructions.get('pack_size'),
+            'total_units': price_instructions.get('total_units'),
+            'unit_name': price_instructions.get('unit_name'),
 
             # Tax
             'tax_percentage': float(price_instructions.get('tax_percentage', 0)) if price_instructions.get('tax_percentage') else None,

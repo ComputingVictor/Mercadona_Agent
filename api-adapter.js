@@ -129,6 +129,12 @@ class MercadonaAPIAdapter {
    * - discount_price: string (opcional)
    */
   transformProduct(apiProduct) {
+    // Mejorar calidad de imágenes (600x600 en lugar de 300x300)
+    const improveImageQuality = (url) => {
+      if (!url) return '';
+      return url.replace('h=300&w=300', 'h=600&w=600');
+    };
+
     return {
       // ID debe ser el ID de Mercadona (string)
       id: apiProduct.id,
@@ -148,16 +154,16 @@ class MercadonaAPIAdapter {
         ? apiProduct.previous_unit_price.toString()
         : '',
 
-      // Imágenes
-      image_url: apiProduct.thumbnail || '',
-      main_image_url: apiProduct.thumbnail || '',
+      // Imágenes en alta calidad (600x600)
+      image_url: improveImageQuality(apiProduct.thumbnail),
+      main_image_url: improveImageQuality(apiProduct.thumbnail),
       secondary_image_url: '',
 
       // Flags
       novedad: apiProduct.is_new || false,
 
-      // Info adicional
-      nutritional_info: '',
+      // Info adicional mejorada
+      nutritional_info: this._buildProductInfo(apiProduct),
 
       // Datos extra de la API (para referencia)
       slug: apiProduct.slug,
@@ -170,6 +176,10 @@ class MercadonaAPIAdapter {
       reference_format: apiProduct.reference_format,
       parent_category: apiProduct.parent_category,
       is_pack: apiProduct.is_pack,
+      pack_size: apiProduct.pack_size,
+      total_units: apiProduct.total_units,
+      unit_name: apiProduct.unit_name,
+      tax_percentage: apiProduct.tax_percentage,
       price_decreased: apiProduct.price_decreased,
       updated_at: apiProduct.updated_at
     };
@@ -301,6 +311,35 @@ class MercadonaAPIAdapter {
       console.warn('Error disparando actualización:', error);
       return false;
     }
+  }
+
+  /**
+   * Construye información detallada del producto
+   */
+  _buildProductInfo(apiProduct) {
+    const info = [];
+
+    // Información de pack
+    if (apiProduct.is_pack && apiProduct.total_units) {
+      info.push(`Pack de ${apiProduct.total_units} ${apiProduct.unit_name || 'unidades'}`);
+    }
+
+    // Tamaño/peso
+    if (apiProduct.unit_size && apiProduct.size_format) {
+      info.push(`${apiProduct.unit_size} ${apiProduct.size_format}`);
+    }
+
+    // Precio de referencia
+    if (apiProduct.reference_price && apiProduct.reference_format) {
+      info.push(`${apiProduct.reference_price}€/${apiProduct.reference_format}`);
+    }
+
+    // IVA
+    if (apiProduct.tax_percentage) {
+      info.push(`IVA: ${apiProduct.tax_percentage}%`);
+    }
+
+    return info.join(' • ');
   }
 
   /**

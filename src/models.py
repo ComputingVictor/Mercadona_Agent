@@ -46,7 +46,9 @@ class Product(Base):
     published = Column(Boolean, default=True)
 
     # Pack info
-    pack_size = Column(Integer)
+    pack_size = Column(Float)
+    total_units = Column(Integer)
+    unit_name = Column(String(50))
 
     # Tax
     tax_percentage = Column(Float)
