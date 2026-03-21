@@ -67,3 +67,26 @@ CLAUDE.md
 data/processed/products_macro_backup.csv
 notebooks/novelties_detector.ipynb
 .claude/settings.local.json
+
+# Environment variables
+.env
+.env.local
+
+# Base de datos local
+data/mercadona.db
+data/*.db
+*.db
+
+# Railway
+.railway/
+
+# Logs
+*.log
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+QUICKSTART.md
+RAILWAY_DEPLOY.md

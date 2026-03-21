@@ -26,4 +26,8 @@ dependencies = [
     "wordcloud>=1.9.4",
     "schedule>=1.2.0",
     "nbconvert>=7.16.4",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.9",
 ]

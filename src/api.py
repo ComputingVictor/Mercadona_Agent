@@ -1,0 +1,355 @@
+"""
+Backend API REST con FastAPI para servir productos de Mercadona.
+Compatible con el frontend existente.
+"""
+
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from typing import List, Optional
+from datetime import datetime, timedelta
+from sqlalchemy import func, desc, or_
+import logging
+
+from .models import Product, PriceHistory, UpdateLog
+from .database import Database
+from .api_client import MercadoaAPIClient
+from .updater import ProductUpdater
+
+logger = logging.getLogger(__name__)
+
+# Inicializar FastAPI
+app = FastAPI(
+    title="Mercadona Products API",
+    description="API REST para productos de Mercadona con histórico de precios",
+    version="2.0.0"
+)
+
+# CORS para permitir peticiones desde el frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especificar dominios
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Inicializar base de datos
+db = Database()
+db.create_tables()
+
+# Updater global
+updater = ProductUpdater(db)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Ejecutar al iniciar la aplicación."""
+    logger.info("API iniciada")
+
+
+@app.get("/")
+def root():
+    """Endpoint raíz."""
+    return {
+        "name": "Mercadona Products API",
+        "version": "2.0.0",
+        "endpoints": {
+            "products": "/api/products",
+            "product_detail": "/api/products/{id}",
+            "categories": "/api/categories",
+            "price_history": "/api/products/{id}/history",
+            "search": "/api/search",
+            "stats": "/api/stats",
+            "update": "/api/update"
+        }
+    }
+
+
+@app.get("/api/products")
+def get_products(
+    category: Optional[str] = None,
+    limit: int = Query(1000, ge=1, le=10000),
+    offset: int = Query(0, ge=0),
+    sort_by: str = Query("display_name", regex="^(display_name|unit_price|category_name|updated_at)$"),
+    order: str = Query("asc", regex="^(asc|desc)$")
+):
+    """
+    Obtiene lista de productos.
+
+    Compatible con el frontend actual que espera un CSV,
+    pero devuelve JSON para más flexibilidad.
+    """
+    with db.get_session() as session:
+        query = session.query(Product).filter(Product.published == True)
+
+        # Filtrar por categoría
+        if category:
+            query = query.filter(Product.category_name == category)
+
+        # Ordenar
+        sort_column = getattr(Product, sort_by)
+        if order == "desc":
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(sort_column)
+
+        # Paginación
+        total = query.count()
+        products = query.offset(offset).limit(limit).all()
+
+        # Convertir a dict
+        products_data = [
+            {
+                "id": p.id,
+                "slug": p.slug,
+                "display_name": p.display_name,
+                "packaging": p.packaging,
+                "thumbnail": p.thumbnail,
+                "share_url": p.share_url,
+                "unit_price": p.unit_price,
+                "bulk_price": p.bulk_price,
+                "reference_price": p.reference_price,
+                "unit_size": p.unit_size,
+                "size_format": p.size_format,
+                "reference_format": p.reference_format,
+                "category_id": p.category_id,
+                "category_name": p.category_name,
+                "parent_category": p.parent_category,
+                "is_new": p.is_new,
+                "is_pack": p.is_pack,
+                "price_decreased": p.price_decreased,
+                "previous_unit_price": p.previous_unit_price,
+                "updated_at": p.updated_at.isoformat() if p.updated_at else None
+            }
+            for p in products
+        ]
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "products": products_data
+        }
+
+
+@app.get("/api/products/{product_id}")
+def get_product_detail(product_id: str):
+    """Obtiene detalle de un producto específico."""
+    with db.get_session() as session:
+        product = session.query(Product).filter_by(id=product_id).first()
+
+        if not product:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+        return {
+            "id": product.id,
+            "slug": product.slug,
+            "display_name": product.display_name,
+            "packaging": product.packaging,
+            "thumbnail": product.thumbnail,
+            "share_url": product.share_url,
+            "unit_price": product.unit_price,
+            "bulk_price": product.bulk_price,
+            "reference_price": product.reference_price,
+            "previous_unit_price": product.previous_unit_price,
+            "price_decreased": product.price_decreased,
+            "unit_size": product.unit_size,
+            "size_format": product.size_format,
+            "reference_format": product.reference_format,
+            "category_id": product.category_id,
+            "category_name": product.category_name,
+            "category_level": product.category_level,
+            "parent_category": product.parent_category,
+            "is_new": product.is_new,
+            "is_pack": product.is_pack,
+            "is_water": product.is_water,
+            "requires_age_check": product.requires_age_check,
+            "pack_size": product.pack_size,
+            "tax_percentage": product.tax_percentage,
+            "status": product.status,
+            "limit": product.limit,
+            "created_at": product.created_at.isoformat() if product.created_at else None,
+            "updated_at": product.updated_at.isoformat() if product.updated_at else None,
+            "last_seen": product.last_seen.isoformat() if product.last_seen else None
+        }
+
+
+@app.get("/api/products/{product_id}/history")
+def get_price_history(
+    product_id: str,
+    days: int = Query(30, ge=1, le=365)
+):
+    """Obtiene histórico de precios de un producto."""
+    with db.get_session() as session:
+        # Verificar que el producto existe
+        product = session.query(Product).filter_by(id=product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+        # Obtener histórico
+        since = datetime.utcnow() - timedelta(days=days)
+        history = session.query(PriceHistory).filter(
+            PriceHistory.product_id == product_id,
+            PriceHistory.recorded_at >= since
+        ).order_by(PriceHistory.recorded_at).all()
+
+        return {
+            "product_id": product_id,
+            "product_name": product.display_name,
+            "current_price": product.unit_price,
+            "history": [
+                {
+                    "date": h.recorded_at.isoformat(),
+                    "unit_price": h.unit_price,
+                    "bulk_price": h.bulk_price,
+                    "price_change": h.price_change,
+                    "price_change_percent": h.price_change_percent,
+                    "is_promotion": h.is_promotion
+                }
+                for h in history
+            ]
+        }
+
+
+@app.get("/api/categories")
+def get_categories():
+    """Obtiene lista de categorías disponibles con conteo de productos."""
+    with db.get_session() as session:
+        categories = session.query(
+            Product.category_name,
+            Product.category_id,
+            func.count(Product.id).label('product_count')
+        ).filter(
+            Product.published == True,
+            Product.category_name.isnot(None)
+        ).group_by(
+            Product.category_name,
+            Product.category_id
+        ).order_by(
+            Product.category_name
+        ).all()
+
+        return {
+            "categories": [
+                {
+                    "id": cat.category_id,
+                    "name": cat.category_name,
+                    "product_count": cat.product_count
+                }
+                for cat in categories
+            ]
+        }
+
+
+@app.get("/api/search")
+def search_products(
+    q: str = Query(..., min_length=2),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """Busca productos por nombre."""
+    with db.get_session() as session:
+        search_term = f"%{q}%"
+
+        products = session.query(Product).filter(
+            Product.published == True,
+            or_(
+                Product.display_name.ilike(search_term),
+                Product.slug.ilike(search_term)
+            )
+        ).limit(limit).all()
+
+        return {
+            "query": q,
+            "count": len(products),
+            "products": [
+                {
+                    "id": p.id,
+                    "display_name": p.display_name,
+                    "thumbnail": p.thumbnail,
+                    "unit_price": p.unit_price,
+                    "category_name": p.category_name
+                }
+                for p in products
+            ]
+        }
+
+
+@app.get("/api/stats")
+def get_stats():
+    """Obtiene estadísticas generales."""
+    with db.get_session() as session:
+        total_products = session.query(func.count(Product.id)).scalar()
+        total_categories = session.query(func.count(func.distinct(Product.category_name))).scalar()
+
+        # Productos nuevos (últimas 24h)
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        new_products = session.query(func.count(Product.id)).filter(
+            Product.created_at >= yesterday
+        ).scalar()
+
+        # Cambios de precio (últimas 24h)
+        price_changes = session.query(func.count(PriceHistory.id)).filter(
+            PriceHistory.recorded_at >= yesterday,
+            PriceHistory.price_change.isnot(None)
+        ).scalar()
+
+        # Última actualización
+        last_update = session.query(UpdateLog).order_by(
+            desc(UpdateLog.completed_at)
+        ).first()
+
+        return {
+            "total_products": total_products,
+            "total_categories": total_categories,
+            "new_products_24h": new_products,
+            "price_changes_24h": price_changes,
+            "last_update": {
+                "completed_at": last_update.completed_at.isoformat() if last_update and last_update.completed_at else None,
+                "status": last_update.status if last_update else None,
+                "products_found": last_update.products_found if last_update else None,
+                "duration_seconds": last_update.duration_seconds if last_update else None
+            } if last_update else None
+        }
+
+
+@app.post("/api/update")
+async def trigger_update(background_tasks: BackgroundTasks):
+    """
+    Dispara una actualización de productos en background.
+    """
+    background_tasks.add_task(updater.run_update)
+
+    return {
+        "message": "Actualización iniciada en background",
+        "status": "running"
+    }
+
+
+@app.get("/api/update/status")
+def get_update_status():
+    """Obtiene el estado de la última actualización."""
+    with db.get_session() as session:
+        last_update = session.query(UpdateLog).order_by(
+            desc(UpdateLog.started_at)
+        ).first()
+
+        if not last_update:
+            return {"status": "never_run"}
+
+        return {
+            "status": last_update.status,
+            "started_at": last_update.started_at.isoformat(),
+            "completed_at": last_update.completed_at.isoformat() if last_update.completed_at else None,
+            "duration_seconds": last_update.duration_seconds,
+            "products_found": last_update.products_found,
+            "products_new": last_update.products_new,
+            "products_updated": last_update.products_updated,
+            "price_changes": last_update.price_changes,
+            "error_message": last_update.error_message
+        }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
