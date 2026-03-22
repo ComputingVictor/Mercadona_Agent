@@ -88,6 +88,9 @@ class MercadonaApp {
       }
     };
 
+    // Enhancements module (will be initialized after products load)
+    this.enhancements = null;
+
     // Initialize app
     this.init();
   }
@@ -103,7 +106,13 @@ class MercadonaApp {
       this.attachEventListeners();
       await this.loadData();
       this.initializeUI();
-      
+
+      // Initialize enhancements module
+      if (typeof MercadonaEnhancements !== 'undefined') {
+        this.enhancements = new MercadonaEnhancements(this);
+        this.initializeEnhancements();
+      }
+
       // Register service worker for PWA functionality
       await this.registerServiceWorker();
       
@@ -1295,7 +1304,7 @@ class MercadonaApp {
   }
 
   /**
-   * Create product card element
+   * Create product card element (ENHANCED)
    */
   createProductCard(product) {
     const card = document.createElement('div');
@@ -1309,17 +1318,34 @@ class MercadonaApp {
     const displayPrice = product.hasDiscount ? product.discountedPrice : product.price;
     const hasDiscount = product.hasDiscount;
 
+    // Get enhanced data from enhancements module
+    const savings = this.enhancements ? this.enhancements.calculateSavings(product) : null;
+    const refPrice = this.enhancements ? this.enhancements.formatReferencePrice(product) : null;
+    const packInfo = this.enhancements ? this.enhancements.formatPackInfo(product) : null;
+
+    // Get badge HTML
+    const savingsBadge = this.enhancements ? this.enhancements.getSavingsBadgeHTML(savings) : '';
+    const packBadge = this.enhancements ? this.enhancements.getPackBadgeHTML(packInfo) : '';
+    const bestValueBadge = this.enhancements ? this.enhancements.getBestValueBadgeHTML(product, this.state.products) : '';
+    const alertBadge = this.enhancements ? this.enhancements.getPriceAlertBadgeHTML(product.id) : '';
+    const droppedBadge = this.enhancements ? this.enhancements.getPriceDroppedBadgeHTML(product) : '';
+
     card.innerHTML = `
       <div class="product-card-image">
-        <img 
+        ${bestValueBadge}
+        ${savingsBadge}
+        ${alertBadge}
+        ${droppedBadge}
+        <img
           src="${product.image || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='}"
           alt="${product.name}"
           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbjwvdGV4dD48L3N2Zz4='"
         >
         ${product.isNovelty ? '<div class="product-novelty-badge"><span>NUEVO</span></div>' : ''}
-        ${hasDiscount ? '<div class="product-discount-badge"><span>DESCUENTO</span></div>' : ''}
+        ${hasDiscount && !savings ? '<div class="product-discount-badge"><span>DESCUENTO</span></div>' : ''}
+        ${packBadge}
         <div class="product-card-actions">
-          <button 
+          <button
             class="product-action-btn favorite-btn ${isFavorite ? 'active' : ''}"
             aria-label="${isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}"
             data-product-id="${product.id}"
@@ -1328,18 +1354,21 @@ class MercadonaApp {
           </button>
         </div>
       </div>
-      
+
       <div class="product-card-content">
         <div class="product-card-category">${product.category}</div>
         <h3 class="product-card-title">${product.name}</h3>
         ${product.subtitle ? `<p class="product-card-subtitle">${product.subtitle}</p>` : ''}
-        
+
         <div class="product-card-footer">
-          <div class="product-card-price">
-            <span class="product-price-current">${this.utils.formatCurrency(displayPrice)}</span>
-            ${hasDiscount ? `<span class="product-price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+          <div class="product-price-info">
+            <div class="product-card-price">
+              <span class="product-price-current">${this.utils.formatCurrency(displayPrice)}</span>
+              ${hasDiscount ? `<span class="product-price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
+            </div>
+            ${refPrice ? `<div class="product-reference-price">${refPrice}</div>` : ''}
           </div>
-          <button 
+          <button
             class="product-card-cart-btn ${isInCart ? 'added' : ''}"
             aria-label="${isInCart ? 'Quitar del carrito' : 'Añadir al carrito'}"
             data-product-id="${product.id}"
@@ -1347,6 +1376,7 @@ class MercadonaApp {
             <i class="fas ${isInCart ? 'fa-check' : 'fa-plus'}" aria-hidden="true"></i>
           </button>
         </div>
+        ${this.enhancements ? this.enhancements.getProductInfoHTML(product) : ''}
       </div>
     `;
 
@@ -3326,6 +3356,37 @@ class MercadonaApp {
           toast.parentNode.removeChild(toast);
         }
       }, 300);
+    }
+  }
+
+  /**
+   * Initialize enhancements module
+   */
+  initializeEnhancements() {
+    if (!this.enhancements) return;
+
+    // Add advanced filters to sidebar
+    const filtersContainer = document.getElementById('advanced-filters-container');
+    if (filtersContainer) {
+      const advancedFilters = this.enhancements.createAdvancedFilters();
+      filtersContainer.appendChild(advancedFilters);
+
+      // Update filter counts
+      this.enhancements.updateFilterCounts(this.state.products);
+
+      // Attach filter chip listeners
+      filtersContainer.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const filterType = chip.dataset.filter;
+          chip.classList.toggle('active');
+
+          if (chip.classList.contains('active')) {
+            this.enhancements.applyAdvancedFilter(filterType);
+          } else {
+            this.showAllProducts();
+          }
+        });
+      });
     }
   }
 
