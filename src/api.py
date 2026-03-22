@@ -61,7 +61,8 @@ def root():
     """Endpoint raíz."""
     return {
         "name": "Mercadona Products API",
-        "version": "2.3.0",
+        "version": "3.0.0",
+        "status": "enhanced",
         "endpoints": {
             "products": "/api/products",
             "product_detail": "/api/products/{id}",
