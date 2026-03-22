@@ -33,8 +33,18 @@ class MercadonaEnhancements {
       return null;
     }
 
-    const original = parseFloat(product.originalPrice.replace(',', '.'));
-    const discounted = parseFloat(product.discountedPrice.replace(',', '.'));
+    // Handle both string and number formats
+    const original = typeof product.originalPrice === 'string'
+      ? parseFloat(product.originalPrice.replace(',', '.'))
+      : parseFloat(product.originalPrice);
+    const discounted = typeof product.discountedPrice === 'string'
+      ? parseFloat(product.discountedPrice.replace(',', '.'))
+      : parseFloat(product.discountedPrice);
+
+    if (isNaN(original) || isNaN(discounted) || original <= 0) {
+      return null;
+    }
+
     const savings = original - discounted;
     const percentage = ((savings / original) * 100).toFixed(0);
 
@@ -51,7 +61,11 @@ class MercadonaEnhancements {
     if (!product.reference_price || !product.reference_format) {
       return null;
     }
-    return `${product.reference_price}€/${product.reference_format}`;
+    // Handle both string and number formats
+    const price = typeof product.reference_price === 'string'
+      ? product.reference_price
+      : product.reference_price.toFixed(2);
+    return `${price}€/${product.reference_format}`;
   }
 
   /**
