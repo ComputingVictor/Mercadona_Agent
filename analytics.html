@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - ¿Qué hay en el súper?</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="enhancements.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .analytics-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 80px 24px 24px;
+    }
+
+    .analytics-header {
+      margin-bottom: 32px;
+    }
+
+    .analytics-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--color-primary), #16a34a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .analytics-header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .stat-card-icon.primary {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--color-primary);
+    }
+
+    .stat-card-icon.warning {
+      background: rgba(251, 191, 36, 0.1);
+      color: #d97706;
+    }
+
+    .stat-card-icon.danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+    }
+
+    .stat-card-icon.info {
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+    }
+
+    .stat-card-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-card-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title i {
+      color: var(--color-primary);
+    }
+
+    .ranking-list {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 32px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.2s ease;
+    }
+
+    .ranking-item:last-child {
+      border-bottom: none;
+    }
+
+    .ranking-item:hover {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+    }
+
+    .ranking-position {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .ranking-position.top-1 {
+      color: #fbbf24;
+    }
+
+    .ranking-position.top-2 {
+      color: #9ca3af;
+    }
+
+    .ranking-position.top-3 {
+      color: #cd7f32;
+    }
+
+    .ranking-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--border-color);
+    }
+
+    .ranking-info {
+      flex: 1;
+    }
+
+    .ranking-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .ranking-category {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .ranking-change {
+      font-size: 1.25rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      white-space: nowrap;
+    }
+
+    .ranking-change.increase {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+    }
+
+    .ranking-change.decrease {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--color-primary);
+    }
+
+    .period-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .period-btn {
+      padding: 10px 20px;
+      border: 2px solid var(--border-color);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .period-btn:hover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+
+    .period-btn.active {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+
+    .chart-container {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 32px;
+      height: 400px;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--text-secondary);
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .analytics-container {
+        padding: 70px 16px 16px;
+      }
+
+      .analytics-header h1 {
+        font-size: 2rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .stat-card-value {
+        font-size: 2rem;
+      }
+
+      .ranking-item {
+        padding: 12px;
+      }
+
+      .ranking-position {
+        min-width: 30px;
+        font-size: 1.2rem;
+      }
+
+      .ranking-image {
+        width: 50px;
+        height: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header (reuse from main page) -->
+  <header class="header glass-header">
+    <div class="header-container">
+      <div class="header-brand">
+        <a href="index.html" style="display: flex; align-items: center;">
+          <img src="img/image.png" alt="Volver" class="logo">
+        </a>
+      </div>
+      <h2 style="margin: 0; font-size: 1.2rem;">Analytics Dashboard</h2>
+      <button id="theme-toggle" class="action-btn" aria-label="Cambiar tema">
+        <i class="fas fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="analytics-container">
+    <div class="analytics-header">
+      <h1><i class="fas fa-chart-bar"></i> Dashboard de Analíticas</h1>
+      <p>Insights y tendencias de precios de productos Mercadona</p>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-shopping-basket"></i>
+        </div>
+        <div class="stat-card-value" id="total-products">-</div>
+        <div class="stat-card-label">Total Productos</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-icon info">
+          <i class="fas fa-tags"></i>
+        </div>
+        <div class="stat-card-value" id="total-categories">-</div>
+        <div class="stat-card-label">Categorías</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-arrow-up"></i>
+        </div>
+        <div class="stat-card-value" id="price-increases">-</div>
+        <div class="stat-card-label">Subidas (24h)</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-icon danger">
+          <i class="fas fa-arrow-down"></i>
+        </div>
+        <div class="stat-card-value" id="price-decreases">-</div>
+        <div class="stat-card-label">Bajadas (24h)</div>
+      </div>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="period-selector">
+      <button class="period-btn active" data-period="7">7 días</button>
+      <button class="period-btn" data-period="30">30 días</button>
+      <button class="period-btn" data-period="90">90 días</button>
+    </div>
+
+    <!-- Top Price Increases -->
+    <h2 class="section-title">
+      <i class="fas fa-fire"></i>
+      Top Subidas de Precio
+    </h2>
+    <div class="ranking-list" id="price-increases-list">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Cargando datos...</p>
+      </div>
+    </div>
+
+    <!-- Top Price Decreases -->
+    <h2 class="section-title">
+      <i class="fas fa-gift"></i>
+      Top Bajadas de Precio (Ofertas)
+    </h2>
+    <div class="ranking-list" id="price-decreases-list">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Cargando datos...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+
+    const savedTheme = localStorage.getItem('mercadona_theme_v2') || 'light';
+    html.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    themeToggle?.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('mercadona_theme_v2', newTheme);
+      updateThemeIcon(newTheme);
+    });
+
+    function updateThemeIcon(theme) {
+      if (themeToggle) {
+        themeToggle.querySelector('i').className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+      }
+    }
+
+    // Analytics Logic
+    const apiBaseURL = window.APP_CONFIG?.apiBaseURL || 'http://localhost:8000';
+    let currentPeriod = 7;
+
+    async function loadStats() {
+      try {
+        const response = await fetch(`${apiBaseURL}/api/stats`);
+        const data = await response.json();
+
+        document.getElementById('total-products').textContent = data.total_products?.toLocaleString() || '0';
+        document.getElementById('total-categories').textContent = data.total_categories || '0';
+        document.getElementById('price-increases').textContent = data.price_changes_24h || '0';
+        document.getElementById('price-decreases').textContent = data.price_changes_24h || '0';
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    async function loadRankings(days) {
+      await Promise.all([
+        loadPriceIncreases(days),
+        loadPriceDecreases(days)
+      ]);
+    }
+
+    async function loadPriceIncreases(days) {
+      const list = document.getElementById('price-increases-list');
+      try {
+        const response = await fetch(`${apiBaseURL}/api/rankings/price-increases?days=${days}&limit=10`);
+        const data = await response.json();
+
+        if (!data.ranking || data.ranking.length === 0) {
+          list.innerHTML = '<p class="text-muted" style="padding: 24px; text-align: center;">No hay datos disponibles</p>';
+          return;
+        }
+
+        list.innerHTML = data.ranking.map((item, index) => `
+          <div class="ranking-item">
+            <div class="ranking-position ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}">#${index + 1}</div>
+            <img src="${item.thumbnail}" alt="${item.display_name}" class="ranking-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=='">
+            <div class="ranking-info">
+              <div class="ranking-name">${item.display_name}</div>
+              <div class="ranking-category">${item.category_name}</div>
+            </div>
+            <div class="ranking-change increase">
+              <i class="fas fa-arrow-up"></i> +${item.price_increase_percent.toFixed(1)}%
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading price increases:', error);
+        list.innerHTML = '<p class="text-muted" style="padding: 24px; text-align: center;">Error al cargar datos</p>';
+      }
+    }
+
+    async function loadPriceDecreases(days) {
+      const list = document.getElementById('price-decreases-list');
+      try {
+        const response = await fetch(`${apiBaseURL}/api/rankings/price-decreases?days=${days}&limit=10`);
+        const data = await response.json();
+
+        if (!data.ranking || data.ranking.length === 0) {
+          list.innerHTML = '<p class="text-muted" style="padding: 24px; text-align: center;">No hay datos disponibles</p>';
+          return;
+        }
+
+        list.innerHTML = data.ranking.map((item, index) => `
+          <div class="ranking-item">
+            <div class="ranking-position ${index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}">#${index + 1}</div>
+            <img src="${item.thumbnail}" alt="${item.display_name}" class="ranking-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=='">
+            <div class="ranking-info">
+              <div class="ranking-name">${item.display_name}</div>
+              <div class="ranking-category">${item.category_name}</div>
+            </div>
+            <div class="ranking-change decrease">
+              <i class="fas fa-arrow-down"></i> -${Math.abs(item.price_decrease_percent).toFixed(1)}%
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading price decreases:', error);
+        list.innerHTML = '<p class="text-muted" style="padding: 24px; text-align: center;">Error al cargar datos</p>';
+      }
+    }
+
+    // Period selector
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPeriod = parseInt(btn.dataset.period);
+        loadRankings(currentPeriod);
+      });
+    });
+
+    // Initial load
+    loadStats();
+    loadRankings(currentPeriod);
+  </script>
+</body>
+</html>

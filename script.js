@@ -1862,9 +1862,9 @@ class MercadonaApp {
   }
 
   /**
-   * View product details
+   * View product details (ENHANCED with tabs)
    */
-  viewProductDetails(product) {
+  async viewProductDetails(product) {
     // Add to recently viewed
     this.addToRecentlyViewed(product.id);
 
@@ -1872,76 +1872,125 @@ class MercadonaApp {
     const images = [];
     if (product.image) images.push(product.image);
     if (product.secondaryImage) images.push(product.secondaryImage);
-    
-    const imageGallery = images.length > 1 ? `
-      <div class="product-detail-image-gallery">
-        <div class="product-detail-main-image">
-          <img src="${images[0]}" alt="${product.name}" class="product-detail-image active" data-image-index="0">
-        </div>
-        <div class="product-detail-thumbnails">
-          ${images.map((img, index) => `
-            <button class="product-thumbnail ${index === 0 ? 'active' : ''}" data-image-index="${index}">
-              <img src="${img}" alt="${product.name} - Imagen ${index + 1}">
-            </button>
-          `).join('')}
-        </div>
-      </div>
-    ` : `
+
+    const imageGallery = `
       <div class="product-detail-image-container">
         <img src="${product.image}" alt="${product.name}" class="product-detail-image">
       </div>
     `;
 
-    // Create modal content
+    // Get price history for this product
+    let priceHistoryHTML = '';
+    try {
+      const response = await fetch(`${this.config.apiBaseURL}/products/${product.id}/history?days=30`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.history && data.history.length > 0) {
+          const minPrice = Math.min(...data.history.map(h => h.unit_price));
+          const maxPrice = Math.max(...data.history.map(h => h.unit_price));
+          const avgPrice = (data.history.reduce((sum, h) => sum + h.unit_price, 0) / data.history.length).toFixed(2);
+
+          priceHistoryHTML = `
+            <div class="price-history-summary">
+              <div class="price-stat"><span>Mín:</span> <strong>${this.utils.formatCurrency(minPrice.toFixed(2))}</strong></div>
+              <div class="price-stat"><span>Máx:</span> <strong>${this.utils.formatCurrency(maxPrice.toFixed(2))}</strong></div>
+              <div class="price-stat"><span>Media:</span> <strong>${this.utils.formatCurrency(avgPrice)}</strong></div>
+            </div>
+            <p class="price-history-note">Histórico de últimos 30 días</p>
+          `;
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar historial:', e);
+    }
+
+    // Build detailed info HTML
+    const detailsHTML = `
+      <div class="product-details-grid">
+        ${product.is_pack ? `<div class="detail-item"><i class="fas fa-box"></i> <span>Pack de ${product.total_units} ${product.unit_name || 'unidades'}</span></div>` : ''}
+        ${product.unit_size ? `<div class="detail-item"><i class="fas fa-weight"></i> <span>${product.unit_size} ${product.size_format}</span></div>` : ''}
+        ${product.reference_price ? `<div class="detail-item"><i class="fas fa-calculator"></i> <span>${product.reference_price}€/${product.reference_format}</span></div>` : ''}
+        ${product.tax_percentage ? `<div class="detail-item"><i class="fas fa-percentage"></i> <span>IVA: ${product.tax_percentage}%</span></div>` : ''}
+        ${product.requires_age_check ? `<div class="detail-item warning"><i class="fas fa-exclamation-triangle"></i> <span>Requiere verificación de edad (+18)</span></div>` : ''}
+        ${product.limit ? `<div class="detail-item warning"><i class="fas fa-hand-paper"></i> <span>Límite: ${product.limit} unidades por compra</span></div>` : ''}
+      </div>
+    `;
+
+    // Create modal content with tabs
     const modalContent = `
-      <div class="product-detail">
+      <div class="product-detail product-detail-enhanced">
         <div class="product-detail-header">
           <div class="product-detail-category-badge">${product.category}</div>
+          ${product.isNovelty ? '<span class="badge-new">NUEVO</span>' : ''}
+          ${product.price_decreased ? '<span class="badge-discount">REBAJADO</span>' : ''}
         </div>
-        
+
         <div class="product-detail-main">
           <div class="product-detail-image-section">
             ${imageGallery}
           </div>
-          
+
           <div class="product-detail-info-section">
             <div class="product-detail-content">
               <h3 class="product-detail-title">${product.name}</h3>
               ${product.subtitle ? `<p class="product-detail-subtitle">${product.subtitle}</p>` : ''}
-              
+
               <div class="product-detail-price-container">
                 <div class="product-detail-price">
                   <span class="price-current">${this.utils.formatCurrency(product.discountedPrice || product.price)}</span>
-                  ${product.discountedPrice && product.originalPrice ? 
+                  ${product.discountedPrice && product.originalPrice ?
                     `<span class="price-original">${this.utils.formatCurrency(product.originalPrice)}</span>` : ''}
                 </div>
-                ${product.discountedPrice && product.originalPrice ? 
-                  `<div class="discount-badge">¡Oferta!</div>` : ''}
+                ${product.discountedPrice && product.originalPrice ?
+                  `<div class="discount-badge">¡Oferta ${this.enhancements ? this.enhancements.calculateSavings(product)?.percentage : ''}% OFF!</div>` : ''}
               </div>
-              
-              ${product.nutritionalInfo ? `
-                <div class="product-detail-nutrition">
-                  <h4 class="nutrition-title">
-                    <i class="fas fa-info-circle" aria-hidden="true"></i>
-                    Información del producto
-                  </h4>
-                  <div class="nutrition-content">
+
+              <!-- Tabs Navigation -->
+              <div class="product-tabs">
+                <button class="product-tab active" data-tab="details">
+                  <i class="fas fa-info-circle"></i> Detalles
+                </button>
+                <button class="product-tab" data-tab="history">
+                  <i class="fas fa-chart-line"></i> Histórico
+                </button>
+                ${product.nutritionalInfo ? `
+                  <button class="product-tab" data-tab="nutrition">
+                    <i class="fas fa-apple-alt"></i> Información
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Tabs Content -->
+              <div class="product-tabs-content">
+                <div class="product-tab-panel active" data-panel="details">
+                  ${detailsHTML}
+                </div>
+                <div class="product-tab-panel" data-panel="history">
+                  ${priceHistoryHTML || '<p class="text-muted">No hay histórico de precios disponible</p>'}
+                </div>
+                ${product.nutritionalInfo ? `
+                  <div class="product-tab-panel" data-panel="nutrition">
                     <p>${product.nutritionalInfo}</p>
                   </div>
-                </div>
-              ` : ''}
-              
+                ` : ''}
+              </div>
+
             </div>
-            
+
             <div class="product-detail-actions">
               <button class="btn btn--primary product-detail-cart-btn" data-product-id="${product.id}">
-                <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}" aria-hidden="true"></i>
+                <i class="fas ${this.state.cart.has(product.id) ? 'fa-check' : 'fa-shopping-cart'}"></i>
                 <span>${this.state.cart.has(product.id) ? 'En el carrito' : 'Añadir al carrito'}</span>
               </button>
               <button class="btn btn--secondary product-detail-favorite-btn" data-product-id="${product.id}">
-                <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}" aria-hidden="true"></i>
+                <i class="fas fa-heart ${this.state.favorites.has(product.id) ? 'active' : ''}"></i>
                 <span>${this.state.favorites.has(product.id) ? 'Quitar favorito' : 'Añadir favorito'}</span>
               </button>
+              ${this.enhancements ? `
+                <button class="btn btn--secondary product-detail-share-btn" title="Compartir">
+                  <i class="fas fa-share-alt"></i>
+                </button>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -1956,6 +2005,7 @@ class MercadonaApp {
     if (modal) {
       const cartBtn = modal.querySelector('.product-detail-cart-btn');
       const favoriteBtn = modal.querySelector('.product-detail-favorite-btn');
+      const shareBtn = modal.querySelector('.product-detail-share-btn');
 
       if (cartBtn) {
         cartBtn.addEventListener('click', () => {
@@ -1971,40 +2021,39 @@ class MercadonaApp {
         });
       }
 
-      // Image gallery functionality
-      const thumbnails = modal.querySelectorAll('.product-thumbnail');
-      const mainImage = modal.querySelector('.product-detail-image');
-      
-      thumbnails.forEach(thumbnail => {
-        thumbnail.addEventListener('click', () => {
-          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
-          const imageSrc = images[imageIndex];
-          
-          // Update main image
-          if (mainImage) {
-            mainImage.src = imageSrc;
-            mainImage.dataset.imageIndex = imageIndex;
+      if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+          if (navigator.share) {
+            navigator.share({
+              title: product.name,
+              text: `${product.name} - ${this.utils.formatCurrency(product.price)}`,
+              url: product.share_url || window.location.href
+            });
+          } else {
+            navigator.clipboard.writeText(product.share_url || window.location.href);
+            this.utils.showToast('Enlace copiado al portapapeles', 'success');
           }
-          
-          // Update active thumbnail
-          thumbnails.forEach(t => t.classList.remove('active'));
-          thumbnail.classList.add('active');
-        });
-
-        // Add lightbox functionality to thumbnails (double click)
-        thumbnail.addEventListener('dblclick', () => {
-          const imageIndex = parseInt(thumbnail.dataset.imageIndex);
-          this.openLightbox(images, imageIndex);
-        });
-      });
-
-      // Add lightbox functionality to main image
-      if (mainImage) {
-        mainImage.style.cursor = 'pointer';
-        mainImage.addEventListener('click', () => {
-          this.openLightbox(images, parseInt(mainImage.dataset.imageIndex) || 0);
         });
       }
+
+      // Tab switching
+      const tabs = modal.querySelectorAll('.product-tab');
+      const panels = modal.querySelectorAll('.product-tab-panel');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabName = tab.dataset.tab;
+
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          // Update active panel
+          panels.forEach(p => p.classList.remove('active'));
+          const panel = modal.querySelector(`[data-panel="${tabName}"]`);
+          if (panel) panel.classList.add('active');
+        });
+      });
     }
   }
 
