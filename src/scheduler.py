@@ -47,14 +47,15 @@ class UpdateScheduler:
     def start(self):
         """
         Inicia el scheduler.
-        Programa actualizaciones cada lunes a las 3:00 AM.
+        Programa actualizaciones DIARIAS a las 3:00 AM para acumular histórico.
         """
-        # Programar para cada lunes a las 3:00 AM
-        schedule.every().monday.at("03:00").do(self.run_scheduled_update)
+        # Programar actualización DIARIA a las 3:00 AM
+        schedule.every().day.at("03:00").do(self.run_scheduled_update)
 
         logger.info("Scheduler iniciado")
         logger.info("Próximas actualizaciones programadas:")
-        logger.info("  - Productos y novedades: Cada lunes a las 03:00 AM")
+        logger.info("  - Productos y novedades: DIARIAMENTE a las 03:00 AM")
+        logger.info("  - Histórico de precios se acumulará solo si hay cambios")
 
         # Loop infinito
         while True:
