@@ -3453,10 +3453,14 @@ class MercadonaApp {
       return;
     }
 
-    // Get API key from APP_CONFIG (comes from GitHub Secrets)
-    const apiKey = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.OPENROUTER_API_KEY !== 'YOUR_OPENROUTER_API_KEY_HERE')
+    // Get API key from APP_CONFIG (comes from GitHub Secrets) or AppConfig fallback
+    let apiKey = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.OPENROUTER_API_KEY !== 'YOUR_OPENROUTER_API_KEY_HERE')
       ? APP_CONFIG.OPENROUTER_API_KEY
       : null;
+
+    if (!apiKey && typeof AppConfig !== 'undefined' && AppConfig.api?.openrouterKey && AppConfig.api.openrouterKey !== 'YOUR_OPENROUTER_API_KEY_HERE') {
+      apiKey = AppConfig.api.openrouterKey;
+    }
 
     if (!apiKey) {
       console.warn('⚠️ OpenRouter API key not configured');

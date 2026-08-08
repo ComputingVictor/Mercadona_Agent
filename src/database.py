@@ -99,6 +99,7 @@ class Database:
             'packaging': product_data.get('packaging', ''),
             'thumbnail': product_data.get('thumbnail', ''),
             'share_url': product_data.get('share_url', ''),
+            'ean': product_data.get('ean'),
 
             # Precios
             'unit_price': float(price_instructions.get('unit_price', 0)) if price_instructions.get('unit_price') else None,
@@ -155,6 +156,12 @@ class Database:
             for key, value in data.items():
                 if key != 'created_at':  # No actualizar fecha de creación
                     setattr(existing, key, value)
+            
+            # Solo actualizar nutrición si están presentes en product_data (no machacar lo ya enriquecido)
+            for key in ['calories', 'proteins', 'carbohydrates', 'fat', 'sugars', 'salt', 'ingredients', 'allergens']:
+                if key in product_data:
+                    setattr(existing, key, product_data[key])
+                    
             existing.updated_at = datetime.utcnow()
 
             # Registrar cambio de precio si existe
@@ -164,6 +171,11 @@ class Database:
             return existing
         else:
             # Crear nuevo producto
+            # Solo añadir nutrición si están en product_data
+            for key in ['calories', 'proteins', 'carbohydrates', 'fat', 'sugars', 'salt', 'ingredients', 'allergens']:
+                if key in product_data:
+                    data[key] = product_data[key]
+                    
             product = Product(**data)
             session.add(product)
 

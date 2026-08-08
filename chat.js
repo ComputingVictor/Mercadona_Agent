@@ -19,10 +19,10 @@ class RecipeAssistantChat {
     // OpenRouter API configuration
     this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
 
-    // Get model from SecureConfig if available
+    // Get model from SecureConfig if available, otherwise fallback to AppConfig
     this.model = (typeof SecureConfig !== 'undefined')
       ? SecureConfig.getChatModel()
-      : 'anthropic/claude-3.5-sonnet';
+      : ((typeof AppConfig !== 'undefined' && AppConfig.api?.chatModel) ? AppConfig.api.chatModel : 'anthropic/claude-3.5-sonnet');
 
     // System prompt - only suggest recipes with Mercadona products
     this.systemPrompt = this.buildSystemPrompt();

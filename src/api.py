@@ -64,18 +64,19 @@ def root():
         "version": "3.0.0",
         "status": "enhanced",
         "endpoints": {
-            "products": "/api/products",
-            "product_detail": "/api/products/{id}",
-            "categories": "/api/categories",
-            "price_history": "/api/products/{id}/history",
-            "search": "/api/search",
-            "stats": "/api/stats",
-            "update": "/api/update",
-            "update_new_arrivals": "/api/update/new-arrivals",
-            "update_price_drops": "/api/update/price-drops",
-            "rankings_increases": "/api/rankings/price-increases",
-            "rankings_decreases": "/api/rankings/price-decreases",
-            "migrate_add_product_fields": "/api/migrate/add-product-fields"
+            "root": "GET /",
+            "products": "GET /api/products",
+            "product_detail": "GET /api/products/{id}",
+            "categories": "GET /api/categories",
+            "price_history": "GET /api/products/{id}/history",
+            "search": "GET /api/search",
+            "stats": "GET /api/stats",
+            "update": "POST /api/update",
+            "update_new_arrivals": "POST /api/update/new-arrivals",
+            "update_price_drops": "POST /api/update/price-drops",
+            "rankings_increases": "GET /api/rankings/price-increases",
+            "rankings_decreases": "GET /api/rankings/price-decreases",
+            "migrate_add_product_fields": "POST /api/migrate/add-product-fields"
         }
     }
 
@@ -138,6 +139,15 @@ def get_products(
                 "tax_percentage": p.tax_percentage,
                 "price_decreased": p.price_decreased,
                 "previous_unit_price": p.previous_unit_price,
+                "ean": p.ean,
+                "calories": p.calories,
+                "proteins": p.proteins,
+                "carbohydrates": p.carbohydrates,
+                "fat": p.fat,
+                "sugars": p.sugars,
+                "salt": p.salt,
+                "ingredients": p.ingredients,
+                "allergens": p.allergens,
                 "updated_at": p.updated_at.isoformat() if p.updated_at else None
             }
             for p in products
@@ -189,6 +199,15 @@ def get_product_detail(product_id: str):
             "tax_percentage": product.tax_percentage,
             "status": product.status,
             "limit": product.limit,
+            "ean": product.ean,
+            "calories": product.calories,
+            "proteins": product.proteins,
+            "carbohydrates": product.carbohydrates,
+            "fat": product.fat,
+            "sugars": product.sugars,
+            "salt": product.salt,
+            "ingredients": product.ingredients,
+            "allergens": product.allergens,
             "created_at": product.created_at.isoformat() if product.created_at else None,
             "updated_at": product.updated_at.isoformat() if product.updated_at else None,
             "last_seen": product.last_seen.isoformat() if product.last_seen else None
@@ -594,6 +613,33 @@ def migrate_add_product_fields():
                 conn.commit()
                 migrations_applied.append("unit_name")
                 logger.info("✓ Columna unit_name añadida")
+
+            # Añadir ean si no existe
+            if "ean" not in columns:
+                logger.info("Añadiendo columna ean...")
+                conn.execute(text("ALTER TABLE products ADD COLUMN ean VARCHAR(50)"))
+                conn.commit()
+                migrations_applied.append("ean")
+                logger.info("✓ Columna ean añadida")
+
+            # Añadir columnas de nutrición
+            nutri_columns = {
+                "calories": "FLOAT",
+                "proteins": "FLOAT",
+                "carbohydrates": "FLOAT",
+                "fat": "FLOAT",
+                "sugars": "FLOAT",
+                "salt": "FLOAT",
+                "ingredients": "TEXT",
+                "allergens": "TEXT"
+            }
+            for col_name, col_type in nutri_columns.items():
+                if col_name not in columns:
+                    logger.info(f"Añadiendo columna {col_name} ({col_type})...")
+                    conn.execute(text(f"ALTER TABLE products ADD COLUMN {col_name} {col_type}"))
+                    conn.commit()
+                    migrations_applied.append(col_name)
+                    logger.info(f"✓ Columna {col_name} añadida")
 
         if migrations_applied:
             return {
