@@ -25,7 +25,11 @@ const AppConfig = {
 
     // Reintentos en caso de error
     retries: 3,
-    retryDelay: 1000
+    retryDelay: 1000,
+
+    // Configuración de Asistente Nutricional (OpenRouter)
+    openrouterKey: 'YOUR_OPENROUTER_API_KEY_HERE',
+    chatModel: 'anthropic/claude-3.5-sonnet'
   },
 
   // Rutas de archivos estáticos (fallback)

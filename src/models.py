@@ -25,6 +25,17 @@ class Product(Base):
     packaging = Column(String(100))
     thumbnail = Column(Text)
     share_url = Column(Text)
+    ean = Column(String(50), nullable=True)
+
+    # Información Nutricional (Open Food Facts / Mercadona Detail)
+    calories = Column(Float, nullable=True)
+    proteins = Column(Float, nullable=True)
+    carbohydrates = Column(Float, nullable=True)
+    fat = Column(Float, nullable=True)
+    sugars = Column(Float, nullable=True)
+    salt = Column(Float, nullable=True)
+    ingredients = Column(Text, nullable=True)
+    allergens = Column(Text, nullable=True)
 
     # Precios
     unit_price = Column(Float)

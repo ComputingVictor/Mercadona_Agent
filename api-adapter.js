@@ -181,6 +181,15 @@ class MercadonaAPIAdapter {
       unit_name: apiProduct.unit_name,
       tax_percentage: apiProduct.tax_percentage,
       price_decreased: apiProduct.price_decreased,
+      ean: apiProduct.ean,
+      calories: apiProduct.calories,
+      proteins: apiProduct.proteins,
+      carbohydrates: apiProduct.carbohydrates,
+      fat: apiProduct.fat,
+      sugars: apiProduct.sugars,
+      salt: apiProduct.salt,
+      ingredients: apiProduct.ingredients,
+      allergens: apiProduct.allergens,
       updated_at: apiProduct.updated_at
     };
   }
@@ -319,27 +328,62 @@ class MercadonaAPIAdapter {
   _buildProductInfo(apiProduct) {
     const info = [];
 
-    // Información de pack
+    // Macronutrientes si existen
+    if (apiProduct.calories && apiProduct.calories > 0) {
+      const macroHTML = `
+        <div class="nutrition-summary" style="margin-bottom: 15px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-bottom: 10px;">
+            <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+              <span style="display: block; font-size: 10px; text-transform: uppercase; color: #166534; font-weight: 600;">Calorías</span>
+              <strong style="font-size: 14px; color: #14532d;">${Math.round(apiProduct.calories)} kcal</strong>
+            </div>
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+              <span style="display: block; font-size: 10px; text-transform: uppercase; color: #1e40af; font-weight: 600;">Proteínas</span>
+              <strong style="font-size: 14px; color: #1e3a8a;">${apiProduct.proteins ? apiProduct.proteins.toFixed(1) : 0}g</strong>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+              <span style="display: block; font-size: 10px; text-transform: uppercase; color: #9a3412; font-weight: 600;">Carbohidratos</span>
+              <strong style="font-size: 14px; color: #7c2d12;">${apiProduct.carbohydrates ? apiProduct.carbohydrates.toFixed(1) : 0}g</strong>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 6px; text-align: center;">
+              <span style="display: block; font-size: 10px; text-transform: uppercase; color: #991b1b; font-weight: 600;">Grasas</span>
+              <strong style="font-size: 14px; color: #7f1d1d;">${apiProduct.fat ? apiProduct.fat.toFixed(1) : 0}g</strong>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #6b7280; text-align: right; margin-top: 4px;">Valores por cada 100g</div>
+        </div>
+      `;
+      info.push(macroHTML);
+    }
+
+    // Información técnica básica
+    const technical = [];
     if (apiProduct.is_pack && apiProduct.total_units) {
-      info.push(`Pack de ${apiProduct.total_units} ${apiProduct.unit_name || 'unidades'}`);
+      technical.push(`Pack de ${apiProduct.total_units} ${apiProduct.unit_name || 'unidades'}`);
     }
-
-    // Tamaño/peso
     if (apiProduct.unit_size && apiProduct.size_format) {
-      info.push(`${apiProduct.unit_size} ${apiProduct.size_format}`);
+      technical.push(`${apiProduct.unit_size} ${apiProduct.size_format}`);
     }
-
-    // Precio de referencia
     if (apiProduct.reference_price && apiProduct.reference_format) {
-      info.push(`${apiProduct.reference_price}€/${apiProduct.reference_format}`);
+      technical.push(`${apiProduct.reference_price}€/${apiProduct.reference_format}`);
     }
-
-    // IVA
     if (apiProduct.tax_percentage) {
-      info.push(`IVA: ${apiProduct.tax_percentage}%`);
+      technical.push(`IVA: ${apiProduct.tax_percentage}%`);
     }
 
-    return info.join(' • ');
+    if (technical.length > 0) {
+      info.push(`<div class="technical-info" style="font-size: 12px; color: #4b5563; padding-top: 8px; border-top: 1px dashed #e5e7eb; margin-top: 10px;">${technical.join(' • ')}</div>`);
+    }
+
+    // Ingredientes y alérgenos si existen
+    if (apiProduct.ingredients) {
+      info.push(`<div class="ingredients-info" style="margin-top: 12px; font-size: 12px; color: #374151;"><strong>Ingredientes:</strong> ${apiProduct.ingredients}</div>`);
+    }
+    if (apiProduct.allergens) {
+      info.push(`<div class="allergens-info" style="margin-top: 8px; font-size: 12px; color: #b91c1c; background: #fef2f2; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #ef4444;"><strong>Alérgenos:</strong> ${apiProduct.allergens}</div>`);
+    }
+
+    return info.join('');
   }
 
   /**
