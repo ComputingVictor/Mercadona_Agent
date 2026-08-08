@@ -173,33 +173,68 @@ class ProductUpdater:
             success_count = 0
             for p in products:
                 try:
-                    # 1. Si no tiene EAN, consultar el detalle del producto en Mercadona
-                    if not p.ean:
-                        logger.info(f"  -> Obteniendo EAN de Mercadona para ID {p.id} ({p.display_name})...")
-                        mercadona_url = f"https://tienda.mercadona.es/api/products/{p.id}/"
-                        res = requests.get(mercadona_url, params={"lang": "es", "wh": self.warehouse}, headers=headers, timeout=5)
-                        if res.status_code == 200:
-                            detail = res.json()
-                            p.ean = detail.get('ean')
+                    # 1. Consultar el detalle del producto en Mercadona
+                    logger.info(f"  -> Obteniendo detalle de Mercadona para ID {p.id} ({p.display_name})...")
+                    mercadona_url = f"https://tienda.mercadona.es/api/products/{p.id}/"
+                    res = requests.get(mercadona_url, params={"lang": "es", "wh": self.warehouse}, headers=headers, timeout=5)
+                    
+                    has_mercadona_nutrition = False
+                    
+                    if res.status_code == 200:
+                        detail = res.json()
+                        p.ean = detail.get('ean')
+                        
+                        # Mapear ingredientes/alérgenos si vienen directamente en la API de Mercadona
+                        nutri_info = detail.get('nutrition_information') or {}
+                        if nutri_info.get('ingredients'):
+                            p.ingredients = nutri_info.get('ingredients')
+                        if nutri_info.get('allergens'):
+                            p.allergens = nutri_info.get('allergens')
                             
-                            # Mapear ingredientes/alérgenos si vienen directamente en la API de Mercadona
-                            nutri_info = detail.get('nutrition_information') or {}
-                            if nutri_info.get('ingredients'):
-                                p.ingredients = nutri_info.get('ingredients')
-                            if nutri_info.get('allergens'):
-                                p.allergens = nutri_info.get('allergens')
-                                
-                            logger.info(f"     ✓ EAN obtenido: {p.ean}")
-                            session.commit() # Guardar el EAN inmediatamente
-                        else:
-                            logger.warning(f"     ✗ Error obteniendo detalle de Mercadona: {res.status_code}")
-                            p.calories = -1.0 # Marcar como fallido para no reintentar
-                            session.commit()
-                            continue
-                        time.sleep(0.2)
+                        # Extraer nutrición de product_information.nutritional_information
+                        prod_info = detail.get('product_information') or {}
+                        nutri_list = prod_info.get('nutritional_information')
+                        
+                        if nutri_list and isinstance(nutri_list, list) and len(nutri_list) > 0:
+                            per_100 = nutri_list[0]
+                            if isinstance(per_100, dict):
+                                def get_amount(keys):
+                                    if isinstance(keys, str):
+                                        keys = [keys]
+                                    for k in keys:
+                                        val = per_100.get(k)
+                                        if isinstance(val, dict):
+                                            amt = val.get("amount")
+                                            if amt is not None:
+                                                try:
+                                                    return float(amt)
+                                                except (ValueError, TypeError):
+                                                    pass
+                                    return None
 
-                    # 2. Consultar macros en Open Food Facts usando el EAN
-                    if p.ean:
+                                p.calories = get_amount("energy_calories")
+                                p.proteins = get_amount(["proteins", "protein"])
+                                p.carbohydrates = get_amount(["carbohydrates", "carbohydrate"])
+                                p.fat = get_amount(["fat", "fats"])
+                                p.sugars = get_amount(["sugars", "sugar"])
+                                p.salt = get_amount("salt")
+                                
+                                if p.calories is not None:
+                                    has_mercadona_nutrition = True
+                                    success_count += 1
+                                    logger.info(f"     ✓ Nutrición Mercadona obtenida: {p.calories} kcal | P: {p.proteins}g | HC: {p.carbohydrates}g")
+                        
+                        session.commit() # Guardar el EAN e info obtenida inmediatamente
+                    else:
+                        logger.warning(f"     ✗ Error obteniendo detalle de Mercadona: {res.status_code}")
+                        p.calories = -1.0 # Marcar como fallido para no reintentar
+                        session.commit()
+                        continue
+                    
+                    time.sleep(0.2)
+
+                    # 2. Consultar macros en Open Food Facts usando el EAN (solo si no se obtuvo de Mercadona)
+                    if not has_mercadona_nutrition and p.ean:
                         logger.info(f"  -> Consultando Open Food Facts para EAN {p.ean}...")
                         off_url = f"https://world.openfoodfacts.org/api/v2/product/{p.ean}.json"
                         res = requests.get(off_url, headers=off_headers, timeout=5)
@@ -222,7 +257,7 @@ class ProductUpdater:
                                     p.allergens = prod_data.get('allergens')
 
                                 success_count += 1
-                                logger.info(f"     ✓ Encontrado: {p.calories} kcal | P: {p.proteins}g | HC: {p.carbohydrates}g")
+                                logger.info(f"     ✓ Encontrado en OFF: {p.calories} kcal | P: {p.proteins}g | HC: {p.carbohydrates}g")
                             else:
                                 p.calories = -1.0 # Marcar para no reintentar
                                 logger.info(f"     ✗ No encontrado en OFF: (EAN: {p.ean})")
